@@ -1,5 +1,5 @@
 transpose_2D:
-	mpicc transpose_2D.c \
+	mpic++ transp.cpp \
 		-o t2D \
 		-lfftw3_mpi \
 		-lfftw3 \
