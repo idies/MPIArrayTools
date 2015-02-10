@@ -151,8 +151,8 @@ int main(int argc, char *argv[])
     /*************************/
 
     // dimensions
-    int n0 = 256;
-    int n1 = 192;
+    int n0 = 48;
+    int n1 = 32;
 
     // generate field descriptor objects
     int sizes0[] = {n0, n1};
