@@ -150,9 +150,16 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     /*************************/
 
+
+    if (argc != 3)
+    {
+        printf("syntax is: %s n0 n1\n", argv[0]);
+        MPI_Finalize();
+        return EXIT_SUCCESS;
+    }
     // dimensions
-    int n0 = 48;
-    int n1 = 32;
+    int n0 = atoi(argv[1]);
+    int n1 = atoi(argv[2]);
 
     // generate field descriptor objects
     int sizes0[] = {n0, n1};
