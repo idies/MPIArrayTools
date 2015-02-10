@@ -14,7 +14,7 @@ class field_descriptor
         int *subsizes;
         int *starts;
         int ndims;
-        int full_size;
+        int local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
         /****/
         field_descriptor(){}
@@ -45,13 +45,15 @@ int field_descriptor::initialize(
     this->subsizes[0] = n[0]/nprocs;
     this->starts[0] = myrank*(n[0]/nprocs);
     this->mpi_dtype = element_type;
-    this->full_size = this->subsizes[0];
+    this->local_size = this->subsizes[0];
+    this->full_size = this->sizes[0];
     for (int i = 1; i < this->ndims; i++)
     {
         this->sizes[i] = n[i];
         this->subsizes[i] = n[i];
         this->starts[i] = 0;
-        this->full_size *= this->subsizes[i];
+        this->local_size *= this->subsizes[i];
+        this->full_size *= this->sizes[i];
     }
     MPI_Type_create_subarray(
             ndims,
@@ -98,7 +100,7 @@ int field_descriptor::read(
     MPI_File_read_all(
             f,
             buffer,
-            this->full_size,
+            this->local_size,
             this->mpi_dtype,
             MPI_STATUS_IGNORE);
     MPI_File_close(&f);
@@ -130,7 +132,7 @@ int field_descriptor::write(
     MPI_File_write_all(
             f,
             buffer,
-            this->full_size,
+            this->local_size,
             this->mpi_dtype,
             MPI_STATUS_IGNORE);
     MPI_File_close(&f);
@@ -161,8 +163,8 @@ int main(int argc, char *argv[])
 
     // allocate arrays
     float *a0, *a1;
-    a0 = (float*)malloc(f0.full_size*sizeof(float));
-    a1 = (float*)malloc(f1.full_size*sizeof(float));
+    a0 = (float*)malloc(f0.local_size*sizeof(float));
+    a1 = (float*)malloc(f1.local_size*sizeof(float));
 
     // read data, do transpose, write data
     f0.read("data0", (void*)a0);
