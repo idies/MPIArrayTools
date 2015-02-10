@@ -141,6 +141,46 @@ int field_descriptor::write(
 }
 /**********************************************************************/
 
+int transpose_2D(
+        int n[],
+        const char *fname0,
+        const char *fname1)
+{
+    // generate field descriptor objects
+    int ntmp[2];
+    ntmp[0] = n[0];
+    ntmp[1] = n[1];
+    field_descriptor f0, f1;
+    f0.initialize(2, ntmp, MPI_FLOAT);
+    ntmp[0] = n[1];
+    ntmp[1] = n[0];
+    f1.initialize(2, ntmp, MPI_FLOAT);
+
+    // allocate arrays
+    float *a0, *a1;
+    a0 = (float*)malloc(f0.local_size*sizeof(float));
+    a1 = (float*)malloc(f1.local_size*sizeof(float));
+
+    // read data, do transpose, write data
+    f0.read(fname0, (void*)a0);
+    fftwf_plan tplan;
+    tplan = fftwf_mpi_plan_transpose(
+            n[0], n[1],
+            a0, a1,
+            MPI_COMM_WORLD,
+            FFTW_ESTIMATE);
+    fftwf_execute(tplan);
+    f1.write(fname1, (void*)a1);
+
+    // free arrays
+    free(a0);
+    free(a1);
+    // free field descriptors
+    f0.finalize();
+    f1.finalize();
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[])
 {
     /*************************/
@@ -151,45 +191,20 @@ int main(int argc, char *argv[])
     /*************************/
 
 
-    if (argc != 3)
+    if (argc == 3)
     {
-        printf("syntax is: %s n0 n1\n", argv[0]);
-        MPI_Finalize();
-        return EXIT_SUCCESS;
+        if (myrank == 0)
+            printf("transposing 2D array from \"data0\" into \"data1\" with %d processes.\n", nprocs);
+        // dimensions
+        int n[2];
+        n[0] = atoi(argv[1]);
+        n[1] = atoi(argv[2]);
+        transpose_2D(
+                n,
+                "data0",
+                "data1");
     }
-    // dimensions
-    int n0 = atoi(argv[1]);
-    int n1 = atoi(argv[2]);
 
-    // generate field descriptor objects
-    int sizes0[] = {n0, n1};
-    int sizes1[] = {n1, n0};
-    field_descriptor f0, f1;
-    f0.initialize(2, sizes0, MPI_FLOAT);
-    f1.initialize(2, sizes1, MPI_FLOAT);
-
-    // allocate arrays
-    float *a0, *a1;
-    a0 = (float*)malloc(f0.local_size*sizeof(float));
-    a1 = (float*)malloc(f1.local_size*sizeof(float));
-
-    // read data, do transpose, write data
-    f0.read("data0", (void*)a0);
-    fftwf_plan tplan;
-    tplan = fftwf_mpi_plan_transpose(
-            n0, n1,
-            a0, a1,
-            MPI_COMM_WORLD,
-            FFTW_ESTIMATE);
-    fftwf_execute(tplan);
-    f1.write("data1", (void*)a1);
-
-    // free arrays
-    free(a0);
-    free(a1);
-    // free field descriptors
-    f0.finalize();
-    f1.finalize();
     /*************************/
     //finalize mpi environment
     MPI_Finalize();
