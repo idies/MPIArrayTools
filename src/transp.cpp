@@ -14,14 +14,10 @@ int main(int argc, char *argv[])
     switch(argc)
     {
         case 3:
-            if (myrank == 0)
-                printf("transposing 2D array from \"data0\" into \"data1\" with %d processes.\n", nprocs);
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
             break;
         case 4:
-            if (myrank == 0)
-                printf("transposing 3D array from \"data0\" into \"data1\" with %d processes.\n", nprocs);
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
             n[2] = atoi(argv[3]);
@@ -32,6 +28,11 @@ int main(int argc, char *argv[])
             return EXIT_SUCCESS;
             break;
     }
+    if (myrank == 0)
+        printf( "transposing %dD array from \"data0\" into \"data1\""
+                " with %d processes.\n",
+                argc - 1,
+                nprocs);
     f0 = new field_descriptor(argc - 1, n, MPI_FLOAT);
     f1 = f0->get_transpose();
 
