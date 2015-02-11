@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
     int n[3];
-    field_descriptor f0, f1;
+    field_descriptor *f0, *f1;
 
     switch(argc)
     {
@@ -19,10 +19,10 @@ int main(int argc, char *argv[])
             // dimensions
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
-            f0.initialize(2, n, MPI_FLOAT);
+            f0 = new field_descriptor(2, n, MPI_FLOAT);
             n[0] = atoi(argv[2]);
             n[1] = atoi(argv[1]);
-            f1.initialize(2, n, MPI_FLOAT);
+            f1 = new field_descriptor(2, n, MPI_FLOAT);
             break;
         case 4:
             if (myrank == 0)
@@ -31,29 +31,30 @@ int main(int argc, char *argv[])
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
             n[2] = atoi(argv[3]);
-            f0.initialize(3, n, MPI_FLOAT);
+            f0 = new field_descriptor(3, n, MPI_FLOAT);
             n[0] = atoi(argv[3]);
             n[1] = atoi(argv[2]);
             n[2] = atoi(argv[1]);
-            f1.initialize(3, n, MPI_FLOAT);
+            f1 = new field_descriptor(3, n, MPI_FLOAT);
             break;
         default:
             printf("you messed up the parameters, I'm not doing anything.\n");
-            f0.finalize();
-            f1.finalize();
             MPI_Finalize();
+            return EXIT_SUCCESS;
             break;
     }
 
     float *a0, *a1;
-    a0 = (float*)malloc(f0.local_size*sizeof(float));
-    a1 = (float*)malloc(f1.local_size*sizeof(float));
-    f0.read("data0", (void*)a0);
-    f0.transpose(a0, a1);
-    f1.write("data1", (void*)a1);
+    a0 = (float*)malloc(f0->local_size*sizeof(float));
+    a1 = (float*)malloc(f1->local_size*sizeof(float));
+    f0->read("data0", (void*)a0);
+    f0->transpose(a0, a1);
+    f1->write("data1", (void*)a1);
     free(a0);
     free(a1);
 
+    delete f0;
+    delete f1;
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

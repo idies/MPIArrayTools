@@ -1,7 +1,7 @@
 #include "field_descriptor.hpp"
 
 
-int field_descriptor::initialize(
+field_descriptor::field_descriptor(
         int ndims,
         int *n,
         MPI_Datatype element_type)
@@ -33,16 +33,14 @@ int field_descriptor::initialize(
             this->mpi_dtype,
             &this->mpi_array_dtype);
     MPI_Type_commit(&this->mpi_array_dtype);
-    return EXIT_SUCCESS;
 }
 
-int field_descriptor::finalize()
+field_descriptor::~field_descriptor()
 {
     free((void*)this->sizes);
     free((void*)this->subsizes);
     free((void*)this->starts);
     MPI_Type_free(&this->mpi_array_dtype);
-    return EXIT_SUCCESS;
 }
 
 int field_descriptor::read(

@@ -20,13 +20,11 @@ class field_descriptor
         int local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
 
-        field_descriptor(){}
-        ~field_descriptor(){}
-        int initialize(
+        field_descriptor(
                 int ndims,
                 int *n,
                 MPI_Datatype element_type);
-        int finalize();
+        ~field_descriptor();
         int read(
                 const char *fname,
                 void *buffer);
