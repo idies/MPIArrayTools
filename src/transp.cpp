@@ -39,13 +39,13 @@ int main(int argc, char *argv[])
     f1 = f0->get_transpose();
 
     float *a0, *a1;
-    a0 = (float*)malloc(f0->local_size*sizeof(float));
-    a1 = (float*)malloc(f1->local_size*sizeof(float));
+    a0 = fftwf_alloc_real(f0->local_size);
+    a1 = fftwf_alloc_real(f1->local_size);
     f0->read("data0", (void*)a0);
     f0->transpose(a0, a1);
     f1->write("data1", (void*)a1);
-    free(a0);
-    free(a1);
+    fftw_free(a0);
+    fftw_free(a1);
 
     delete f0;
     delete f1;
