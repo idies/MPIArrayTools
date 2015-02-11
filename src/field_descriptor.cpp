@@ -154,3 +154,11 @@ int field_descriptor::transpose(
     return EXIT_SUCCESS;
 }
 
+field_descriptor* field_descriptor::get_transpose()
+{
+    int n[this->ndims];
+    for (int i=0; i<this->ndims; i++)
+        n[i] = this->sizes[this->ndims - i - 1];
+    return new field_descriptor(this->ndims, n, this->mpi_dtype);
+}
+

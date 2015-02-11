@@ -31,6 +31,7 @@ class field_descriptor
         int write(
                 const char *fname,
                 void *buffer);
+        field_descriptor *get_transpose();
         int transpose(
                 float *input,
                 float *output);

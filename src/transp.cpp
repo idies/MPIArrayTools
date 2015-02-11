@@ -16,26 +16,15 @@ int main(int argc, char *argv[])
         case 3:
             if (myrank == 0)
                 printf("transposing 2D array from \"data0\" into \"data1\" with %d processes.\n", nprocs);
-            // dimensions
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
-            f0 = new field_descriptor(2, n, MPI_FLOAT);
-            n[0] = atoi(argv[2]);
-            n[1] = atoi(argv[1]);
-            f1 = new field_descriptor(2, n, MPI_FLOAT);
             break;
         case 4:
             if (myrank == 0)
                 printf("transposing 3D array from \"data0\" into \"data1\" with %d processes.\n", nprocs);
-            // dimensions
             n[0] = atoi(argv[1]);
             n[1] = atoi(argv[2]);
             n[2] = atoi(argv[3]);
-            f0 = new field_descriptor(3, n, MPI_FLOAT);
-            n[0] = atoi(argv[3]);
-            n[1] = atoi(argv[2]);
-            n[2] = atoi(argv[1]);
-            f1 = new field_descriptor(3, n, MPI_FLOAT);
             break;
         default:
             printf("you messed up the parameters, I'm not doing anything.\n");
@@ -43,6 +32,8 @@ int main(int argc, char *argv[])
             return EXIT_SUCCESS;
             break;
     }
+    f0 = new field_descriptor(argc - 1, n, MPI_FLOAT);
+    f1 = f0->get_transpose();
 
     float *a0, *a1;
     a0 = (float*)malloc(f0->local_size*sizeof(float));
