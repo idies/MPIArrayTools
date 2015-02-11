@@ -33,6 +33,9 @@ class field_descriptor
         int write(
                 const char *fname,
                 void *buffer);
+        int transpose(
+                float *input,
+                float *output);
 };
 
 #endif//__FIELD_DESCRIPTOR__

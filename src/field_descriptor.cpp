@@ -109,3 +109,50 @@ int field_descriptor::write(
     return EXIT_SUCCESS;
 }
 
+int field_descriptor::transpose(
+        float *input,
+        float *output)
+{
+    // IMPORTANT NOTE:
+    // for 3D transposition, the input data is messed up
+    fftwf_plan tplan;
+    ptrdiff_t dim1;
+    switch (this->ndims)
+    {
+        case 2:
+            dim1 = this->sizes[1];
+            break;
+        case 3:
+            // transpose the two local dimensions 1 and 2
+            dim1 = this->sizes[1]*this->sizes[2];
+            float *atmp;
+            atmp = (float*)malloc(dim1*sizeof(float));
+            for (int k = 0; k < this->subsizes[0]; k++)
+            {
+                // put transposed slice in atmp
+                for (int j = 0; j < this->sizes[1]; j++)
+                    for (int i = 0; i < this->sizes[2]; i++)
+                        atmp[i*this->sizes[1] + j] =
+                            input[(k*this->sizes[1] + j)*this->sizes[2] + i];
+                // copy back transposed slice
+                for (int j = 0; j < this->sizes[2]; j++)
+                    for (int i = 0; i < this->sizes[1]; i++)
+                        input[(k*this->sizes[2] + j)*this->sizes[1] + i] =
+                            atmp[j*this->sizes[1] + i];
+            }
+            free(atmp);
+            break;
+        default:
+            return -1;
+            break;
+    }
+    tplan = fftwf_mpi_plan_transpose(
+            this->sizes[0], dim1,
+            input, output,
+            MPI_COMM_WORLD,
+            FFTW_ESTIMATE);
+    fftwf_execute(tplan);
+    fftwf_destroy_plan(tplan);
+    return EXIT_SUCCESS;
+}
+
