@@ -10,7 +10,6 @@
 
 extern int myrank, nprocs;
 
-/**********************************************************************/
 class field_descriptor
 {
     public:
