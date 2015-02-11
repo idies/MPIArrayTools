@@ -12,7 +12,6 @@ LIBS = -lfftw3_mpi \
 vpath %.cpp ./src/
 
 src := \
-	transp.cpp \
 	field_descriptor.cpp
 
 obj := $(patsubst %.cpp, ./obj/%.o, ${src})
@@ -22,10 +21,19 @@ obj := $(patsubst %.cpp, ./obj/%.o, ${src})
 		${CFLAGS} \
 		-c $^ -o $@
 
-transpose_2D: ${obj}
+transpose: ${obj} ./obj/transpose.o
 	${LINKER} \
+		./obj/transpose.o \
 		${obj} \
-		-o t2D \
+		-o transpose \
+		${LIBS} \
+		${NULL}
+
+resize: ${obj} ./obj/resize.o
+	${LINKER} \
+		./obj/resize.o \
+		${obj} \
+		-o resize \
 		${LIBS} \
 		${NULL}
 
