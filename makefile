@@ -1,7 +1,8 @@
 MPICXX  = mpicxx
 LINKER  = mpicxx
 DEFINES =
-CFLAGS  =
+CFLAGS  = -Wall \
+		  -O2
 
 LIBS = -lfftw3_mpi \
 	   -lfftw3 \
@@ -14,9 +15,9 @@ src := \
 	transp.cpp \
 	field_descriptor.cpp
 
-obj := $(patsubst %.cpp, ./obj/%.cpp.o, ${src})
+obj := $(patsubst %.cpp, ./obj/%.o, ${src})
 
-./obj/%.cpp.o: %.cpp
+./obj/%.o: %.cpp
 	${MPICXX} ${DEFINES} \
 		${CFLAGS} \
 		-c $^ -o $@
@@ -28,3 +29,6 @@ transpose_2D: ${obj}
 		${LIBS} \
 		${NULL}
 
+clean:
+	rm ./obj/*.o
+	rm t2D

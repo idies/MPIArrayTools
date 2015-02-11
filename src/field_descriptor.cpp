@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include "field_descriptor.hpp"
 
+extern int myrank, nprocs;
 
 field_descriptor::field_descriptor(
         int ndims,
@@ -160,5 +162,15 @@ field_descriptor* field_descriptor::get_transpose()
     for (int i=0; i<this->ndims; i++)
         n[i] = this->sizes[this->ndims - i - 1];
     return new field_descriptor(this->ndims, n, this->mpi_dtype);
+}
+
+
+int resize(
+        field_descriptor *fi,
+        fftwf_complex *ai,
+        field_descriptor *fo,
+        fftwf_complex *ao)
+{
+    return EXIT_SUCCESS;
 }
 

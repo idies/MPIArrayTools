@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "field_descriptor.hpp"
 
 int myrank, nprocs;
