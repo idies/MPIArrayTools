@@ -65,5 +65,9 @@ int fftwf_copy_complex_array(
         field_descriptor *fo,
         fftwf_complex *ao);
 
+int fftwf_clip_zero_padding(
+        field_descriptor *f,
+        float *a);
+
 #endif//__FIELD_DESCRIPTOR__
 

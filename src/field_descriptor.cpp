@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <algorithm>
+#include <iostream>
 #include "field_descriptor.hpp"
 
 extern int myrank, nprocs;
@@ -146,7 +147,7 @@ int field_descriptor::transpose(
             free(atmp);
             break;
         default:
-            return -1;
+            return EXIT_FAILURE;
             break;
     }
     tplan = fftwf_mpi_plan_transpose(
@@ -176,7 +177,7 @@ int fftwf_copy_complex_array(
         fftwf_complex *ao)
 {
     if ((fi->ndims != 3) || (fo->ndims != 3))
-        return -1;
+        return EXIT_FAILURE;
     fftwf_complex *buffer;
     buffer = fftwf_alloc_complex(fi->slice_size);
 
@@ -220,12 +221,6 @@ int fftwf_copy_complex_array(
         {
             if (myrank == fi->rank(ii0))
             {
-//                printf(
-//                        "send %d ii0 = %ld oi0 = %ld fo->rank(oi0) = %d\n",
-//                        myrank,
-//                        ii0,
-//                        oi0,
-//                        fo->rank(oi0));
                 MPI_Send(
                         (void*)(ai + (ii0-fi->starts[0])*fi->slice_size),
                         fi->slice_size,
@@ -236,7 +231,6 @@ int fftwf_copy_complex_array(
             }
             if (myrank == fo->rank(oi0))
             {
-//                printf("receive %d ii0 = %ld oi0 = %ld\n", myrank, ii0, oi0);
                 MPI_Recv(
                         (void*)(buffer),
                         fi->slice_size,
@@ -249,7 +243,6 @@ int fftwf_copy_complex_array(
         }
         if (myrank == fo->rank(oi0))
         {
-//            printf("%d ii0 = %ld\n", myrank, ii0);
             for (ii1 = 0; ii1 < fi->sizes[1]; ii1++)
             {
                 if (ii1 <= fi->sizes[1]/2)
@@ -269,7 +262,6 @@ int fftwf_copy_complex_array(
                         (buffer + ii1*fi->sizes[2] + min_fast_dim),
                         (ao + ((oi0 - fo->starts[0])*fo->sizes[1] + oi1)*fo->sizes[2]));
             }
-//            printf("%d ii0 = %ld, after copy\n", myrank, ii0);
         }
     }
     fftw_free(buffer);
@@ -278,3 +270,20 @@ int fftwf_copy_complex_array(
     return EXIT_SUCCESS;
 }
 
+int fftwf_clip_zero_padding(
+        field_descriptor *f,
+        float *a)
+{
+    if (f->ndims != 3)
+        return EXIT_FAILURE;
+    float *b;
+    b = a;
+    for (int i0 = 0; i0 < f->subsizes[0]; i0++)
+        for (int i1 = 0; i1 < f->sizes[1]; i1++)
+        {
+            std::copy(a, a + f->sizes[2], b);
+            a += f->sizes[2] + 2;
+            b += f->sizes[2];
+        }
+    return EXIT_SUCCESS;
+}

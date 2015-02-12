@@ -30,14 +30,14 @@ int main(int argc, char *argv[])
     f1 = new field_descriptor(3, n, MPI_COMPLEX8);
     n[0] = f1->sizes[0];
     n[1] = f1->sizes[1];
-    n[2] = 2*f1->sizes[2];
+    n[2] = 2*(f1->sizes[2]-1);
     f2 = new field_descriptor(3, n, MPI_REAL4);
 
     fftwf_complex *a0, *a1;
     float *a2;
     a0 = fftwf_alloc_complex(f0->local_size);
     a1 = fftwf_alloc_complex(f1->local_size);
-    a2 = fftwf_alloc_real(f2->local_size);
+    a2 = fftwf_alloc_real(2*f1->local_size);
 
     f0->read("data0", (void*)a0);
 
@@ -46,11 +46,12 @@ int main(int argc, char *argv[])
             f1, a1);
 
     fftwf_plan c2r = fftwf_mpi_plan_dft_c2r_3d(
-            f2->sizes[0], f2->sizes[1], f2->sizes[2]-2,
+            f2->sizes[0], f2->sizes[1], f2->sizes[2],
             a1, a2,
             MPI_COMM_WORLD,
             FFTW_ESTIMATE);
     fftwf_execute(c2r);
+    fftwf_clip_zero_padding(f2, a2);
     f2->write("data2", (void*)a2);
     fftw_free(a0);
     fftw_free(a1);
