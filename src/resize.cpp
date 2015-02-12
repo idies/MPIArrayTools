@@ -5,6 +5,34 @@
 
 int myrank, nprocs;
 
+/* function to get pair of descriptors for real and Fourier space
+ * arrays used with fftw.
+ * the n0, n1, n2 correspond to the real space data WITHOUT the zero
+ * padding that FFTW needs.
+ * IMPORTANT: the real space array must be allocated with
+ * 2*fc->local_size, and then the zeros cleaned up before trying
+ * to write data.
+ * */
+int fftwf_get_descriptors_3D(
+        int n0, int n1, int n2,
+        field_descriptor **fr,
+        field_descriptor **fc)
+{
+    // I need to check whether there's already something there...
+    //if (*fr != NULL) delete *fr;
+    //if (*fc != NULL) delete *fc;
+    int ntmp[3];
+    ntmp[0] = n0;
+    ntmp[1] = n1;
+    ntmp[2] = n2;
+    *fr = new field_descriptor(3, ntmp, MPI_REAL4);
+    ntmp[0] = n0;
+    ntmp[1] = n1;
+    ntmp[2] = n2/2+1;
+    *fc = new field_descriptor(3, ntmp, MPI_COMPLEX8);
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char *argv[])
 {
     MPI_Init(&argc, &argv);
@@ -12,7 +40,6 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     fftwf_mpi_init();
 
-    int n[3];
     field_descriptor *f0r, *f0c;
     field_descriptor *f1r, *f1c;
 
@@ -23,23 +50,12 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 
-    n[0] = atoi(argv[1]);
-    n[1] = atoi(argv[2]);
-    n[2] = atoi(argv[3]);
-    f0c = new field_descriptor(3, n, MPI_COMPLEX8);
-    n[0] = f0c->sizes[0];
-    n[1] = f0c->sizes[1];
-    n[2] = 2*(f0c->sizes[2]-1);
-    f0r = new field_descriptor(3, n, MPI_REAL4);
-
-    n[0] = 2*atoi(argv[1]);
-    n[1] = 2*atoi(argv[2]);
-    n[2] = 2*(atoi(argv[3])-1)+1;
-    f1c = new field_descriptor(3, n, MPI_COMPLEX8);
-    n[0] = f1c->sizes[0];
-    n[1] = f1c->sizes[1];
-    n[2] = 2*(f1c->sizes[2]-1);
-    f1r = new field_descriptor(3, n, MPI_REAL4);
+    fftwf_get_descriptors_3D(
+            atoi(argv[1]), atoi(argv[2]), atoi(argv[3]),
+            &f0r, &f0c);
+    fftwf_get_descriptors_3D(
+            2*atoi(argv[1]), 2*atoi(argv[2]), 2*atoi(argv[3]),
+            &f1r, &f1c);
 
     fftwf_complex *a0, *a1c;
     float *a1r;
@@ -71,7 +87,6 @@ int main(int argc, char *argv[])
     fftwf_execute(c2r);
     fftwf_destroy_plan(c2r);
 
-    std::cerr << myrank << " " << f1r->local_size << std::endl;
     fftwf_clip_zero_padding(f1r, a1r);
     f1r->write("data1r", (void*)a1r);
     fftw_free(a0);
