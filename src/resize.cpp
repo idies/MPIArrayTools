@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 #include "field_descriptor.hpp"
 
 int myrank, nprocs;
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
 
     n[0] = 2*atoi(argv[1]);
     n[1] = 2*atoi(argv[2]);
-    n[2] = 2*atoi(argv[3]);
+    n[2] = 2*(atoi(argv[3])-1)+1;
     f1c = new field_descriptor(3, n, MPI_COMPLEX8);
     n[0] = f1c->sizes[0];
     n[1] = f1c->sizes[1];
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
     fftwf_execute(c2r);
     fftwf_destroy_plan(c2r);
 
+    std::cerr << myrank << " " << f1r->local_size << std::endl;
     fftwf_clip_zero_padding(f1r, a1r);
     f1r->write("data1r", (void*)a1r);
     fftw_free(a0);
