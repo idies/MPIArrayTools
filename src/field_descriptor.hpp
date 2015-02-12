@@ -14,7 +14,7 @@ class field_descriptor
         int *subsizes;
         int *starts;
         int ndims;
-        int local_size, full_size;
+        int slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
 
 
@@ -47,6 +47,11 @@ class field_descriptor
         int transpose(
                 float *input,
                 float *output);
+
+        inline int rank(int i0)
+        {
+            return i0 / this->subsizes[0];
+        }
 };
 
 
@@ -54,7 +59,7 @@ class field_descriptor
  * Fourier space: either chop off high modes, or pad with zeros.
  * the arrays are assumed to use fftw layout.
  * */
-int resize(
+int fftwf_copy_complex_array(
         field_descriptor *fi,
         fftwf_complex *ai,
         field_descriptor *fo,

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <algorithm>
 #include "field_descriptor.hpp"
 
 extern int myrank, nprocs;
@@ -9,13 +10,14 @@ field_descriptor::field_descriptor(
         MPI_Datatype element_type)
 {
     this->ndims = ndims;
-    this->sizes    = (int*)malloc(ndims*sizeof(int));
-    this->subsizes = (int*)malloc(ndims*sizeof(int));
-    this->starts   = (int*)malloc(ndims*sizeof(int));
+    this->sizes    = new int[ndims];
+    this->subsizes = new int[ndims];
+    this->starts   = new int[ndims];
     this->sizes[0] = n[0];
     this->subsizes[0] = n[0]/nprocs;
     this->starts[0] = myrank*(n[0]/nprocs);
     this->mpi_dtype = element_type;
+    this->slice_size = 1;
     this->local_size = this->subsizes[0];
     this->full_size = this->sizes[0];
     for (int i = 1; i < this->ndims; i++)
@@ -23,6 +25,7 @@ field_descriptor::field_descriptor(
         this->sizes[i] = n[i];
         this->subsizes[i] = n[i];
         this->starts[i] = 0;
+        this->slice_size *= this->subsizes[i];
         this->local_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
     }
@@ -39,9 +42,9 @@ field_descriptor::field_descriptor(
 
 field_descriptor::~field_descriptor()
 {
-    free((void*)this->sizes);
-    free((void*)this->subsizes);
-    free((void*)this->starts);
+    delete[] this->sizes;
+    delete[] this->subsizes;
+    delete[] this->starts;
     MPI_Type_free(&this->mpi_array_dtype);
 }
 
@@ -165,12 +168,113 @@ field_descriptor* field_descriptor::get_transpose()
 }
 
 
-int resize(
+// should I use a template here?
+int fftwf_copy_complex_array(
         field_descriptor *fi,
         fftwf_complex *ai,
         field_descriptor *fo,
         fftwf_complex *ao)
 {
+    if ((fi->ndims != 3) || (fo->ndims != 3))
+        return -1;
+    fftwf_complex *buffer;
+    buffer = fftwf_alloc_complex(fi->slice_size);
+
+    int min_fast_dim;
+    min_fast_dim =
+        (fi->sizes[fi->ndims - 1] > fo->sizes[fi->ndims - 1]) ?
+         fo->sizes[fi->ndims - 1] : fi->sizes[fi->ndims - 1];
+
+    // clean up destination, in case we're padding with zeros
+    // (even if only for one dimension)
+    std::fill_n((float*)ao, fo->local_size, 0.0);
+
+    int64_t ii0, ii1;
+    int64_t oi0, oi1;
+    int64_t delta1, delta0;
+    delta0 = (fo->sizes[0] - fi->sizes[0]);
+    delta1 = (fo->sizes[1] - fi->sizes[1]);
+    for (ii0=0; ii0 < fi->sizes[0]; ii0++)
+    {
+        if (ii0 <= fi->sizes[0]/2)
+        {
+            oi0 = ii0;
+            if (oi0 > fo->sizes[0]/2)
+                continue;
+        }
+        else
+        {
+            oi0 = ii0 + delta0;
+            if ((oi0 < 0) || ((fo->sizes[0] - oi0) >= fo->sizes[0]/2))
+                continue;
+        }
+        if ((fi->rank(ii0) == fo->rank(oi0)) &&
+            (myrank == fi->rank(ii0)))
+        {
+            std::copy(
+                    ai + (ii0 - fi->starts[0]    )*fi->slice_size,
+                    ai + (ii0 - fi->starts[0] + 1)*fi->slice_size,
+                    buffer);
+        }
+        else
+        {
+            if (myrank == fi->rank(ii0))
+            {
+//                printf(
+//                        "send %d ii0 = %ld oi0 = %ld fo->rank(oi0) = %d\n",
+//                        myrank,
+//                        ii0,
+//                        oi0,
+//                        fo->rank(oi0));
+                MPI_Send(
+                        (void*)(ai + (ii0-fi->starts[0])*fi->slice_size),
+                        fi->slice_size,
+                        MPI_COMPLEX8,
+                        fo->rank(oi0),
+                        ii0,
+                        MPI_COMM_WORLD);
+            }
+            if (myrank == fo->rank(oi0))
+            {
+//                printf("receive %d ii0 = %ld oi0 = %ld\n", myrank, ii0, oi0);
+                MPI_Recv(
+                        (void*)(buffer),
+                        fi->slice_size,
+                        MPI_COMPLEX8,
+                        fi->rank(ii0),
+                        ii0,
+                        MPI_COMM_WORLD,
+                        MPI_STATUS_IGNORE);
+            }
+        }
+        if (myrank == fo->rank(oi0))
+        {
+//            printf("%d ii0 = %ld\n", myrank, ii0);
+            for (ii1 = 0; ii1 < fi->sizes[1]; ii1++)
+            {
+                if (ii1 <= fi->sizes[1]/2)
+                {
+                    oi1 = ii1;
+                    if (oi1 > fo->sizes[1]/2)
+                        continue;
+                }
+                else
+                {
+                    oi1 = ii1 + delta1;
+                    if ((oi1 < 0) || ((fo->sizes[1] - oi1) >= fo->sizes[1]/2))
+                        continue;
+                }
+                std::copy(
+                        (buffer + ii1*fi->sizes[2]),
+                        (buffer + ii1*fi->sizes[2] + min_fast_dim),
+                        (ao + ((oi0 - fo->starts[0])*fo->sizes[1] + oi1)*fo->sizes[2]));
+            }
+//            printf("%d ii0 = %ld, after copy\n", myrank, ii0);
+        }
+    }
+    fftw_free(buffer);
+    MPI_Barrier(MPI_COMM_WORLD);
+
     return EXIT_SUCCESS;
 }
 
