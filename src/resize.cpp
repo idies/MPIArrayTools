@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    fftwf_mpi_init();
 
     int n[3];
     field_descriptor *f0r, *f0c;
@@ -74,6 +75,7 @@ int main(int argc, char *argv[])
     fftw_free(a0);
     fftw_free(a1c);
     fftw_free(a1r);
+    fftwf_mpi_cleanup();
 
     delete f0r;
     delete f0c;
