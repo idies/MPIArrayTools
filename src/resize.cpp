@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
             MPI_COMM_WORLD,
             FFTW_ESTIMATE);
     fftwf_execute(c2r);
+    fftwf_destroy_plan(c2r);
     fftwf_clip_zero_padding(f2, a2);
     f2->write("data2", (void*)a2);
     fftw_free(a0);
