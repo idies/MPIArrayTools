@@ -19,8 +19,8 @@ int fftwf_get_descriptors_3D(
         field_descriptor **fc)
 {
     // I need to check whether there's already something there...
-    //if (*fr != NULL) delete *fr;
-    //if (*fc != NULL) delete *fc;
+    if (*fr != NULL) delete *fr;
+    if (*fc != NULL) delete *fc;
     int ntmp[3];
     ntmp[0] = n0;
     ntmp[1] = n1;
@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     fftwf_mpi_init();
 
-    field_descriptor *f0r, *f0c;
-    field_descriptor *f1r, *f1c;
+    field_descriptor *f0r=NULL, *f0c=NULL;
+    field_descriptor *f1r=NULL, *f1c=NULL;
 
     if (argc != 4)
     {

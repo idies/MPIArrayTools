@@ -276,8 +276,7 @@ int fftwf_clip_zero_padding(
 {
     if (f->ndims != 3)
         return EXIT_FAILURE;
-    float *b;
-    b = a;
+    float *b = a;
     for (int i0 = 0; i0 < f->subsizes[0]; i0++)
         for (int i1 = 0; i1 < f->sizes[1]; i1++)
         {

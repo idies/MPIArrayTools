@@ -10,10 +10,10 @@ class field_descriptor
     public:
 
         /* data */
-        int *sizes;
-        int *subsizes;
-        int *starts;
-        int ndims;
+        int *sizes    = NULL;
+        int *subsizes = NULL;
+        int *starts   = NULL;
+        int ndims     = NULL;
         int slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
 
