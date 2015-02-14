@@ -89,20 +89,18 @@ int RMHD_converter::convert(
     fftwf_clip_zero_padding(this->f4r, this->r3);
 
     //now mix the two components
-    float *atmp = fftwf_alloc_real(this->f4r->slice_size);
+    float *atmp = fftwf_alloc_real(this->f4r->local_size);
 
-    for (int k = 0; k < this->f4r->subsizes[0]; k++)
-    {
-        // put transposed slice in atmp
-        for (int j = 0; j < this->f3r->slice_size; j++)
-            for (int i = 0; i < 2; i++)
-                atmp[i*2 + j] = this->r3[j*2 + i];
-        // copy back transposed slice
+    // put transposed slice in atmp
+    for (int k = 0; k < this->f3r->local_size; k++)
         for (int j = 0; j < 2; j++)
-            for (int i = 0; i < this->f3r->slice_size; i++)
-                this->r3[i*2 + j] = atmp[j*2 + i];
-    }
-    fftwf_free(atmp);
+                atmp[k*2 + j] = this->r3[j*this->f3r->local_size + k];
+    // copy back transposed slice
+    //for (int k = 0; k < this->f3r->local_size; k++)
+    //    for (int j = 0; j < 2; j++)
+    //            atmp[j*this->f3r->local_size + k] = this->r3[k*2 + j];
+    fftwf_free(this->r3);
+    this->r3 = atmp;
 
     f4r->write(ofile, (void*)this->r3);
     return EXIT_SUCCESS;
