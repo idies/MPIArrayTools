@@ -13,7 +13,7 @@ class field_descriptor
         int *sizes    = NULL;
         int *subsizes = NULL;
         int *starts   = NULL;
-        int ndims     = NULL;
+        int ndims;
         int slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
 
@@ -47,6 +47,9 @@ class field_descriptor
         int transpose(
                 float *input,
                 float *output);
+        int transpose(
+                fftwf_complex *input,
+                fftwf_complex *output = NULL);
 
         inline int rank(int i0)
         {

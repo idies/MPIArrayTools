@@ -160,6 +160,71 @@ int field_descriptor::transpose(
     return EXIT_SUCCESS;
 }
 
+int field_descriptor::transpose(
+        fftwf_complex *input,
+        fftwf_complex *output)
+{
+    switch (this->ndims)
+    {
+        case 2:
+            // do a global transpose over the 2 dimensions
+            if (this->sizes[0] % nprocs != 0 || this->sizes[1] % nprocs != 0)
+            {
+                std::cerr << "you're trying to work with an array that cannot "
+                             "be evenly distributed among processes.\n"
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+            if (output == NULL)
+            {
+                std::cerr << "bad arguments for transpose.\n" << std::endl;
+                return EXIT_FAILURE;
+            }
+            fftwf_plan tplan;
+            tplan = fftwf_mpi_plan_many_transpose(
+                    this->sizes[0], this->sizes[1], 2,
+                    FFTW_MPI_DEFAULT_BLOCK,
+                    FFTW_MPI_DEFAULT_BLOCK,
+                    (float*)input, (float*)output,
+                    MPI_COMM_WORLD,
+                    FFTW_ESTIMATE);
+            fftwf_execute(tplan);
+            fftwf_destroy_plan(tplan);
+            break;
+        case 3:
+            // transpose the two local dimensions 1 and 2
+            fftwf_complex *atmp;
+            atmp = fftwf_alloc_complex(this->slice_size);
+            for (int k = 0; k < this->subsizes[0]; k++)
+            {
+                // put transposed slice in atmp
+                for (int j = 0; j < this->sizes[1]; j++)
+                    for (int i = 0; i < this->sizes[2]; i++)
+                    {
+                        atmp[i*this->sizes[1] + j][0] =
+                            input[(k*this->sizes[1] + j)*this->sizes[2] + i][0];
+                        atmp[i*this->sizes[1] + j][1] =
+                            input[(k*this->sizes[1] + j)*this->sizes[2] + i][1];
+                    }
+                // copy back transposed slice
+                for (int j = 0; j < this->sizes[2]; j++)
+                    for (int i = 0; i < this->sizes[1]; i++)
+                    {
+                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][0] =
+                            atmp[j*this->sizes[1] + i][0];
+                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][1] =
+                            atmp[j*this->sizes[1] + i][1];
+                    }
+            }
+            fftwf_free(atmp);
+            break;
+        default:
+            return EXIT_FAILURE;
+            break;
+    }
+    return EXIT_SUCCESS;
+}
+
 field_descriptor* field_descriptor::get_transpose()
 {
     int n[this->ndims];

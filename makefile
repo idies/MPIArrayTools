@@ -37,6 +37,14 @@ resize: ${obj} ./obj/resize.o
 		${LIBS} \
 		${NULL}
 
+resize_and_transpose: ${obj} ./obj/resize_and_transpose.o
+	${LINKER} \
+		./obj/resize_and_transpose.o \
+		${obj} \
+		-o resize_and_transpose \
+		${LIBS} \
+		${NULL}
+
 clean:
 	rm ./obj/*.o
 	rm t2D
