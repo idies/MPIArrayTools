@@ -178,6 +178,7 @@ int RMHD_converter::convert(
     int rid, zid;
     int kk;
     ptrdiff_t cubbie_size = 8*8*8*2;
+    ptrdiff_t cc;
     for (int k = 0; k < this->drcubbie->sizes[0]; k++)
     {
         kk = k - this->drcubbie->starts[0];
@@ -190,27 +191,20 @@ int RMHD_converter::convert(
                 zid = this->dzcubbie->rank(z);
                 if (myrank == rid || myrank == zid)
                 {
+                    cc = ((kk*this->drcubbie->sizes[1]+j) *
+                          this->drcubbie->sizes[2] + i) * cubbie_size;
                     if (rid == zid)
                     {
                         std::copy(
-                            this->r3 +
-                                (kk*this->drcubbie->sizes[1]+j)*
-                                this->drcubbie->sizes[2] +
-                                i,
-                            this->r3 +
-                                (k*this->drcubbie->sizes[1]+j)*
-                                this->drcubbie->sizes[2] +
-                                i + cubbie_size,
-                            rtmp + zz);
+                            this->r3 + cc,
+                            this->r3 + cc + cubbie_size,
+                            rtmp + zz*cubbie_size);
                     }
                     else
                     {
                         if (myrank == rid)
                             MPI_Send(
-                                this->r3 +
-                                    (kk*this->drcubbie->sizes[1]+j)*
-                                    this->drcubbie->sizes[2] +
-                                    i,
+                                this->r3 + cc,
                                 cubbie_size,
                                 MPI_REAL4,
                                 zid,
@@ -218,7 +212,7 @@ int RMHD_converter::convert(
                                 MPI_COMM_WORLD);
                         else
                             MPI_Recv(
-                                rtmp + zz,
+                                rtmp + zz*cubbie_size,
                                 cubbie_size,
                                 MPI_REAL4,
                                 rid,
