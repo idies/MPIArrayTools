@@ -13,7 +13,8 @@ vpath %.cpp ./src/
 
 src := \
 	field_descriptor.cpp \
-	fftwf_tools.cpp
+	fftwf_tools.cpp \
+	RMHD_converter.cpp
 
 obj := $(patsubst %.cpp, ./obj/%.o, ${src})
 
@@ -22,11 +23,17 @@ obj := $(patsubst %.cpp, ./obj/%.o, ${src})
 		${CFLAGS} \
 		-c $^ -o $@
 
+exec = \
+	   transpose \
+	   resize \
+	   resize_and_transpose \
+	   full
+
 transpose: ${obj} ./obj/transpose.o
 	${LINKER} \
 		./obj/transpose.o \
 		${obj} \
-		-o transpose \
+		-o $@ \
 		${LIBS} \
 		${NULL}
 
@@ -34,7 +41,7 @@ resize: ${obj} ./obj/resize.o
 	${LINKER} \
 		./obj/resize.o \
 		${obj} \
-		-o resize \
+		-o $@ \
 		${LIBS} \
 		${NULL}
 
@@ -42,10 +49,19 @@ resize_and_transpose: ${obj} ./obj/resize_and_transpose.o
 	${LINKER} \
 		./obj/resize_and_transpose.o \
 		${obj} \
-		-o resize_and_transpose \
+		-o $@ \
+		${LIBS} \
+		${NULL}
+
+full: ${obj} ./obj/full.o
+	${LINKER} \
+		./obj/full.o \
+		${obj} \
+		-o $@ \
 		${LIBS} \
 		${NULL}
 
 clean:
 	rm ./obj/*.o
-	rm t2D
+	rm -f ${exec}
+

@@ -2,36 +2,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include "field_descriptor.hpp"
+#include "fftwf_tools.hpp"
 
 int myrank, nprocs;
-
-/* function to get pair of descriptors for real and Fourier space
- * arrays used with fftw.
- * the n0, n1, n2 correspond to the real space data WITHOUT the zero
- * padding that FFTW needs.
- * IMPORTANT: the real space array must be allocated with
- * 2*fc->local_size, and then the zeros cleaned up before trying
- * to write data.
- * */
-int fftwf_get_descriptors_3D(
-        int n0, int n1, int n2,
-        field_descriptor **fr,
-        field_descriptor **fc)
-{
-    // I need to check whether there's already something there...
-    if (*fr != NULL) delete *fr;
-    if (*fc != NULL) delete *fc;
-    int ntmp[3];
-    ntmp[0] = n0;
-    ntmp[1] = n1;
-    ntmp[2] = n2;
-    *fr = new field_descriptor(3, ntmp, MPI_REAL4);
-    ntmp[0] = n0;
-    ntmp[1] = n1;
-    ntmp[2] = n2/2+1;
-    *fc = new field_descriptor(3, ntmp, MPI_COMPLEX8);
-    return EXIT_SUCCESS;
-}
 
 int main(int argc, char *argv[])
 {

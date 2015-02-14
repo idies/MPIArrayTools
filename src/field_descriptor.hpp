@@ -1,9 +1,9 @@
 #include <mpi.h>
 #include <fftw3-mpi.h>
 
-#ifndef __FIELD_DESCRIPTOR__
+#ifndef FIELD_DESCRIPTOR
 
-#define __FIELD_DESCRIPTOR__
+#define FIELD_DESCRIPTOR
 
 class field_descriptor
 {
@@ -14,7 +14,7 @@ class field_descriptor
         int *subsizes = NULL;
         int *starts   = NULL;
         int ndims;
-        int slice_size, local_size, full_size;
+        ptrdiff_t slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
 
 
@@ -72,5 +72,5 @@ int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
 
-#endif//__FIELD_DESCRIPTOR__
+#endif//FIELD_DESCRIPTOR
 
