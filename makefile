@@ -12,7 +12,8 @@ LIBS = -lfftw3_mpi \
 vpath %.cpp ./src/
 
 src := \
-	field_descriptor.cpp
+	field_descriptor.cpp \
+	fftwf_tools.cpp
 
 obj := $(patsubst %.cpp, ./obj/%.o, ${src})
 
