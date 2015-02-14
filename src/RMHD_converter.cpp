@@ -1,10 +1,47 @@
 #include "RMHD_converter.hpp"
 
+extern int myrank, nprocs;
+
+inline ptrdiff_t part1by2(ptrdiff_t x)
+{
+    ptrdiff_t n = x & 0x000003ff;
+    n = (n ^ (n << 16)) & 0xff0000ff;
+    n = (n ^ (n <<  8)) & 0x0300f00f;
+    n = (n ^ (n <<  4)) & 0x030c30c3;
+    n = (n ^ (n <<  2)) & 0x09249249;
+    return n;
+}
+
+inline ptrdiff_t unpart1by2(ptrdiff_t z)
+{
+        ptrdiff_t n = z & 0x09249249;
+        n = (n ^ (n >>  2)) & 0x030c30c3;
+        n = (n ^ (n >>  4)) & 0x0300f00f;
+        n = (n ^ (n >>  8)) & 0xff0000ff;
+        n = (n ^ (n >> 16)) & 0x000003ff;
+        return n;
+}
+
+inline ptrdiff_t regular_to_zindex(
+        ptrdiff_t x0, ptrdiff_t x1, ptrdiff_t x2)
+{
+    return part1by2(x0) | (part1by2(x1) << 1) | (part1by2(x2) << 2);
+}
+
+inline void zindex_to_grid3D(
+        ptrdiff_t z,
+        ptrdiff_t &x0, ptrdiff_t &x1, ptrdiff_t &x2)
+{
+    x0 = unpart1by2(z     );
+    x1 = unpart1by2(z >> 1);
+    x2 = unpart1by2(z >> 2);
+}
+
 RMHD_converter::RMHD_converter(
         int n0, int n1, int n2,
         int N0, int N1, int N2)
 {
-    int n[3];
+    int n[7];
 
     // first 3 arguments are dimensions for input array
     // i.e. actual dimensions for the Fourier representation.
@@ -30,8 +67,7 @@ RMHD_converter::RMHD_converter(
     n[2] = n0;
     this->f2c = new field_descriptor(3, n, MPI_COMPLEX8);
 
-    // following 3 arguments are dimensions for output array
-    // i.e. real space grid dimensions
+    // following 3 arguments are dimensions for real space grid dimensions
     // f3r and f3c will be allocated in this call
     fftwf_get_descriptors_3D(
             N0, N1, N2,
@@ -56,11 +92,46 @@ RMHD_converter::RMHD_converter(
             MPI_COMM_WORLD,
             FFTW_PATIENT);
 
-    // the description for the output
+    // various descriptions for the real data
     n[0] = N0*2;
     n[1] = N1;
     n[2] = N2;
     this->f4r = new field_descriptor(3, n, MPI_REAL4);
+    n[0] = N0/8;
+    n[1] = N1/8;
+    n[2] = N2/8;
+    n[3] = 8;
+    n[4] = 8;
+    n[5] = 8;
+    n[6] = 2;
+    this->drcubbie = new field_descriptor(7, n, MPI_REAL4);
+    n[0] = (N0/8) * (N1/8) * (N2/8);
+    n[1] = 8;
+    n[2] = 8;
+    n[3] = 8;
+    n[4] = 2;
+    this->dzcubbie = new field_descriptor(5, n, MPI_REAL4);
+
+}
+
+RMHD_converter::~RMHD_converter()
+{
+    if (this->f0c != NULL) delete this->f0c;
+    if (this->f1c != NULL) delete this->f1c;
+    if (this->f2c != NULL) delete this->f2c;
+    if (this->f3c != NULL) delete this->f3c;
+    if (this->f3r != NULL) delete this->f3r;
+    if (this->f4r != NULL) delete this->f4r;
+    if (this->drcubbie != NULL) delete this->drcubbie;
+    if (this->dzcubbie != NULL) delete this->dzcubbie;
+
+    if (this->c0  != NULL) fftwf_free(this->c0);
+    if (this->c12 != NULL) fftwf_free(this->c12);
+    if (this->c3  != NULL) fftwf_free(this->c3);
+    if (this->r3  != NULL) fftwf_free(this->r3);
+
+    fftwf_destroy_plan(this->complex2real0);
+    fftwf_destroy_plan(this->complex2real1);
 }
 
 int RMHD_converter::convert(
@@ -88,21 +159,84 @@ int RMHD_converter::convert(
 
     fftwf_clip_zero_padding(this->f4r, this->r3);
 
-    //now mix the two components
-    float *atmp = fftwf_alloc_real(this->f4r->local_size);
+    // new array where mixed components will be placed
+    float *rtmp = fftwf_alloc_real( 4*this->f3c->local_size);
+    float *tpointer;
 
-    // put transposed slice in atmp
+    // mix components
     for (int k = 0; k < this->f3r->local_size; k++)
         for (int j = 0; j < 2; j++)
-                atmp[k*2 + j] = this->r3[j*this->f3r->local_size + k];
-    // copy back transposed slice
-    //for (int k = 0; k < this->f3r->local_size; k++)
-    //    for (int j = 0; j < 2; j++)
-    //            atmp[j*this->f3r->local_size + k] = this->r3[k*2 + j];
-    fftwf_free(this->r3);
-    this->r3 = atmp;
+                rtmp[k*2 + j] = this->r3[j*this->f3r->local_size + k];
 
-    f4r->write(ofile, (void*)this->r3);
+    // point to mixed data
+    tpointer = this->r3;
+    this->r3 = rtmp;
+    rtmp = tpointer;
+
+    // shuffle into z order
+    ptrdiff_t z, zz;
+    int rid, zid;
+    int kk;
+    ptrdiff_t cubbie_size = 8*8*8*2;
+    for (int k = 0; k < this->drcubbie->sizes[0]; k++)
+    {
+        kk = k - this->drcubbie->starts[0];
+        for (int j = 0; j < this->drcubbie->sizes[1]; j++)
+            for (int i = 0; i < this->drcubbie->sizes[2]; i++)
+            {
+                z = regular_to_zindex(k, j, i);
+                zz = z - this->dzcubbie->starts[0];
+                rid = this->drcubbie->rank(k);
+                zid = this->dzcubbie->rank(z);
+                if (myrank == rid || myrank == zid)
+                {
+                    if (rid == zid)
+                    {
+                        std::copy(
+                            this->r3 +
+                                (kk*this->drcubbie->sizes[1]+j)*
+                                this->drcubbie->sizes[2] +
+                                i,
+                            this->r3 +
+                                (k*this->drcubbie->sizes[1]+j)*
+                                this->drcubbie->sizes[2] +
+                                i + cubbie_size,
+                            rtmp + zz);
+                    }
+                    else
+                    {
+                        if (myrank == rid)
+                            MPI_Send(
+                                this->r3 +
+                                    (kk*this->drcubbie->sizes[1]+j)*
+                                    this->drcubbie->sizes[2] +
+                                    i,
+                                cubbie_size,
+                                MPI_REAL4,
+                                zid,
+                                z,
+                                MPI_COMM_WORLD);
+                        else
+                            MPI_Recv(
+                                rtmp + zz,
+                                cubbie_size,
+                                MPI_REAL4,
+                                rid,
+                                z,
+                                MPI_COMM_WORLD,
+                                MPI_STATUS_IGNORE);
+                    }
+                }
+            }
+    }
+
+    //point to shuffled data
+    tpointer = this->r3;
+    this->r3 = rtmp;
+    rtmp = tpointer;
+
+    fftwf_free(rtmp);
+    this->dzcubbie->write(ofile, (void*)this->r3);
     return EXIT_SUCCESS;
 }
 

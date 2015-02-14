@@ -8,6 +8,7 @@
 
 #define RMHD_CONVERTER
 
+
 class RMHD_converter
 {
     public:
@@ -16,7 +17,14 @@ class RMHD_converter
         field_descriptor *f1c = NULL; // descriptor for 2D transposed input
         field_descriptor *f2c = NULL; // descriptor for 3D fully transposed input
         field_descriptor *f3c = NULL, *f3r=NULL; // descriptors for FFT
-        field_descriptor *f4r = NULL; //descriptor for output
+
+        // descriptor for N0*2 x N1 x N2 real space array
+        field_descriptor *f4r = NULL;
+
+        // descriptor for N0/8 x N1/8 x N2/8 x 8 x 8 x 8 x 2 array
+        field_descriptor *drcubbie = NULL;
+        // descriptor for NZ x 8 x 8 x 8 x 2 array
+        field_descriptor *dzcubbie = NULL;
 
         fftwf_complex *c0  = NULL; // array to store 2D input
         fftwf_complex *c12 = NULL; // array to store transposed input
@@ -30,23 +38,7 @@ class RMHD_converter
         RMHD_converter(
                 int n0, int n1, int n2,
                 int N0, int N1, int N2);
-        ~RMHD_converter()
-        {
-            if (this->f0c != NULL) delete this->f0c;
-            if (this->f1c != NULL) delete this->f1c;
-            if (this->f2c != NULL) delete this->f2c;
-            if (this->f3c != NULL) delete this->f3c;
-            if (this->f3r != NULL) delete this->f3r;
-            if (this->f4r != NULL) delete this->f4r;
-
-            if (this->c0  != NULL) fftwf_free(this->c0);
-            if (this->c12 != NULL) fftwf_free(this->c12);
-            if (this->c3  != NULL) fftwf_free(this->c3);
-            if (this->r3  != NULL) fftwf_free(this->r3);
-
-            fftwf_destroy_plan(this->complex2real0);
-            fftwf_destroy_plan(this->complex2real1);
-        }
+        ~RMHD_converter();
 
         int convert(
                 const char *ifile0,
