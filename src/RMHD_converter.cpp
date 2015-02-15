@@ -184,6 +184,12 @@ int RMHD_converter::convert(
             z = regular_to_zindex(k, j, i);
             zid = this->dzcubbie->rank(z);
             zz = z - this->dzcubbie->starts[0];
+            //if (myrank == 0)
+            //    std::cerr <<
+            //        z << " " <<
+            //        k << " " <<
+            //        j << " " <<
+            //        i << std::endl;
             if (myrank == rid || myrank == zid)
             {
                 // first, do actual shuffling
@@ -191,8 +197,8 @@ int RMHD_converter::convert(
                     for (int tk = 0; tk < 8; tk++)
                     for (int tj = 0; tj < 8; tj++)
                     {
-                        cc = ((kk*8+tk)*this->f3r->sizes[1] + (j*8+tj)) *
-                             this->f3r->sizes[2]*2;
+                        cc = (((kk*8+tk)*this->f3r->sizes[1] + (j*8+tj)) *
+                              this->f3r->sizes[2] + i*8)*2;
                         std::copy(
                                 this->r3 + cc,
                                 this->r3 + cc + 16,
