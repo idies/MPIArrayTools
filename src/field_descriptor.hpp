@@ -16,13 +16,16 @@ class field_descriptor
         int ndims;
         ptrdiff_t slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
+        int myrank, nprocs;
+        MPI_Comm comm;
 
 
         /* methods */
         field_descriptor(
                 int ndims,
                 int *n,
-                MPI_Datatype element_type);
+                MPI_Datatype element_type,
+                MPI_Comm COMM_TO_USE);
         ~field_descriptor();
 
         /* io is performed using MPI_File stuff, and our
