@@ -100,17 +100,11 @@ RMHD_converter::RMHD_converter(
     n[0] = N0/8;
     n[1] = N1/8;
     n[2] = N2/8;
-    n[3] = 8;
-    n[4] = 8;
-    n[5] = 8;
-    n[6] = 2;
-    this->drcubbie = new field_descriptor(7, n, MPI_REAL4);
+    n[3] = 8*8*8*2;
+    this->drcubbie = new field_descriptor(4, n, MPI_REAL4);
     n[0] = (N0/8) * (N1/8) * (N2/8);
-    n[1] = 8;
-    n[2] = 8;
-    n[3] = 8;
-    n[4] = 2;
-    this->dzcubbie = new field_descriptor(5, n, MPI_REAL4);
+    n[1] = 8*8*8*2;
+    this->dzcubbie = new field_descriptor(2, n, MPI_REAL4);
 
 }
 
@@ -179,50 +173,58 @@ int RMHD_converter::convert(
     int kk;
     ptrdiff_t cubbie_size = 8*8*8*2;
     ptrdiff_t cc;
+    float *rz = fftwf_alloc_real(cubbie_size);
     for (int k = 0; k < this->drcubbie->sizes[0]; k++)
     {
+        rid = this->drcubbie->rank(k);
         kk = k - this->drcubbie->starts[0];
         for (int j = 0; j < this->drcubbie->sizes[1]; j++)
-            for (int i = 0; i < this->drcubbie->sizes[2]; i++)
+        for (int i = 0; i < this->drcubbie->sizes[2]; i++)
+        {
+            z = regular_to_zindex(k, j, i);
+            zid = this->dzcubbie->rank(z);
+            zz = z - this->dzcubbie->starts[0];
+            if (myrank == rid || myrank == zid)
             {
-                z = regular_to_zindex(k, j, i);
-                zz = z - this->dzcubbie->starts[0];
-                rid = this->drcubbie->rank(k);
-                zid = this->dzcubbie->rank(z);
-                if (myrank == rid || myrank == zid)
-                {
-                    cc = ((kk*this->drcubbie->sizes[1]+j) *
-                          this->drcubbie->sizes[2] + i) * cubbie_size;
-                    if (rid == zid)
+                // first, do actual shuffling
+                if (myrank == rid)
+                    for (int tk = 0; tk < 8; tk++)
+                    for (int tj = 0; tj < 8; tj++)
                     {
+                        cc = ((kk*8+tk)*this->f3r->sizes[1] + (j*8+tj)) *
+                             this->f3r->sizes[2]*2;
                         std::copy(
-                            this->r3 + cc,
-                            this->r3 + cc + cubbie_size,
-                            rtmp + zz*cubbie_size);
-                    }
-                    else
-                    {
-                        if (myrank == rid)
-                            MPI_Send(
                                 this->r3 + cc,
-                                cubbie_size,
-                                MPI_REAL4,
-                                zid,
-                                z,
-                                MPI_COMM_WORLD);
-                        else
-                            MPI_Recv(
-                                rtmp + zz*cubbie_size,
-                                cubbie_size,
-                                MPI_REAL4,
-                                rid,
-                                z,
-                                MPI_COMM_WORLD,
-                                MPI_STATUS_IGNORE);
+                                this->r3 + cc + 16,
+                                rz + (tk*8 + tj)*16);
                     }
+                // now copy or send/receive
+                if (rid == zid) std::copy(
+                        rz,
+                        rz + cubbie_size,
+                        rtmp + zz*cubbie_size);
+                else
+                {
+                    if (myrank == rid) MPI_Send(
+                            rz,
+                            cubbie_size,
+                            MPI_REAL4,
+                            zid,
+                            z,
+                            MPI_COMM_WORLD);
+                    else MPI_Recv(
+                            rtmp + zz*cubbie_size,
+                            cubbie_size,
+                            MPI_REAL4,
+                            rid,
+                            z,
+                            MPI_COMM_WORLD,
+                            MPI_STATUS_IGNORE);
                 }
             }
+        }
     }
+    fftwf_free(rz);
 
     //point to shuffled data
     tpointer = this->r3;
