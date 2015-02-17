@@ -51,7 +51,7 @@ RMHD_converter::RMHD_converter(
     // (which is generally an even number)
     n[0] = n0*n1;
     n[1] = n2;
-    this->f0c = new field_descriptor(2, n, MPI_COMPLEX8);
+    this->f0c = new field_descriptor(2, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
     // f1c will be pointing at the input array after it has been
     // transposed in 2D, therefore we have this correspondence:
@@ -59,13 +59,13 @@ RMHD_converter::RMHD_converter(
     n[0] = n2;
     n[1] = n0;
     n[2] = n1;
-    this->f1c = new field_descriptor(3, n, MPI_COMPLEX8);
+    this->f1c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
     // the description for the fully transposed field
     n[0] = n2;
     n[1] = n1;
     n[2] = n0;
-    this->f2c = new field_descriptor(3, n, MPI_COMPLEX8);
+    this->f2c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
     // following 3 arguments are dimensions for real space grid dimensions
     // f3r and f3c will be allocated in this call
@@ -96,15 +96,15 @@ RMHD_converter::RMHD_converter(
     n[0] = N0*2;
     n[1] = N1;
     n[2] = N2;
-    this->f4r = new field_descriptor(3, n, MPI_REAL4);
+    this->f4r = new field_descriptor(3, n, MPI_REAL4, MPI_COMM_WORLD);
     n[0] = N0/8;
     n[1] = N1/8;
     n[2] = N2/8;
     n[3] = 8*8*8*2;
-    this->drcubbie = new field_descriptor(4, n, MPI_REAL4);
+    this->drcubbie = new field_descriptor(4, n, MPI_REAL4, MPI_COMM_WORLD);
     n[0] = (N0/8) * (N1/8) * (N2/8);
     n[1] = 8*8*8*2;
-    this->dzcubbie = new field_descriptor(2, n, MPI_REAL4);
+    this->dzcubbie = new field_descriptor(2, n, MPI_REAL4, MPI_COMM_WORLD);
 
 }
 
