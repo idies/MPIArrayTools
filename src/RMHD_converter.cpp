@@ -1,4 +1,5 @@
 #include "RMHD_converter.hpp"
+#include <string>
 
 extern int myrank, nprocs;
 
@@ -39,8 +40,16 @@ inline void zindex_to_grid3D(
 
 RMHD_converter::RMHD_converter(
         int n0, int n1, int n2,
-        int N0, int N1, int N2)
+        int N0, int N1, int N2,
+        int nfiles)
 {
+    if (nprocs % nfiles != 0)
+    {
+        std::cerr <<
+            "Number of output files incompatible with number of processes.\n"
+            "Aborting.\n" << std::endl;
+        exit(EXIT_FAILURE);
+    }
     int n[7];
 
     // first 3 arguments are dimensions for input array
@@ -106,6 +115,15 @@ RMHD_converter::RMHD_converter(
     n[1] = 8*8*8*2;
     this->dzcubbie = new field_descriptor(2, n, MPI_REAL4, MPI_COMM_WORLD);
 
+    //set up output file descriptor
+    int out_rank, out_nprocs;
+    out_nprocs = nprocs/nfiles;
+    this->out_group = myrank / out_nprocs;
+    out_rank = myrank % out_nprocs;
+    n[0] = ((N0/8) * (N1/8) * (N2/8)) / nfiles;
+    n[1] = 8*8*8*2;
+    MPI_Comm_split(MPI_COMM_WORLD, this->out_group, out_rank, &this->out_communicator);
+    this->dout = new field_descriptor(2, n, MPI_REAL4, this->out_communicator);
 }
 
 RMHD_converter::~RMHD_converter()
@@ -118,6 +136,9 @@ RMHD_converter::~RMHD_converter()
     if (this->f4r != NULL) delete this->f4r;
     if (this->drcubbie != NULL) delete this->drcubbie;
     if (this->dzcubbie != NULL) delete this->dzcubbie;
+    if (this->dout != NULL) delete this->dout;
+
+    MPI_Comm_free(&this->out_communicator);
 
     if (this->c0  != NULL) fftwf_free(this->c0);
     if (this->c12 != NULL) fftwf_free(this->c12);
@@ -232,7 +253,11 @@ int RMHD_converter::convert(
     rtmp = tpointer;
 
     fftwf_free(rtmp);
-    this->dzcubbie->write(ofile, (void*)this->r3);
+    char temp_char[200];
+    sprintf(temp_char, "%s_Z%.7lx\0", ofile, this->out_group*this->dout->sizes[0]);
+    this->dout->write(
+            temp_char,
+            this->r3 + this->out_group*this->dout->sizes[0]);
     return EXIT_SUCCESS;
 }
 

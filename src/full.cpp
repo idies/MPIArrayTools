@@ -10,7 +10,8 @@ int main(int argc, char *argv[])
 
     RMHD_converter *bla = new RMHD_converter(
             atoi(argv[1]), atoi(argv[2]), atoi(argv[3]),
-            atoi(argv[4]), atoi(argv[5]), atoi(argv[6]));
+            atoi(argv[4]), atoi(argv[5]), atoi(argv[6]),
+            2);
 
     bla->convert("Kdata0", "Kdata1", "Rdata");
     delete bla;
