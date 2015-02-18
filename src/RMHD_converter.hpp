@@ -26,6 +26,13 @@ class RMHD_converter
         // descriptor for NZ x 8 x 8 x 8 x 2 array
         field_descriptor *dzcubbie = NULL;
 
+        // descriptor for (NZ/nfiles) x 8 x 8 x 8 x 2 array
+        field_descriptor *dout = NULL;
+
+        // communicator to use for output
+        MPI_Comm out_communicator;
+        int out_group;
+
         fftwf_complex *c0  = NULL; // array to store 2D input
         fftwf_complex *c12 = NULL; // array to store transposed input
         fftwf_complex *c3  = NULL; // array to store resized Fourier data
@@ -37,7 +44,8 @@ class RMHD_converter
         /* methods */
         RMHD_converter(
                 int n0, int n1, int n2,
-                int N0, int N1, int N2);
+                int N0, int N1, int N2,
+                int nfiles);
         ~RMHD_converter();
 
         int convert(

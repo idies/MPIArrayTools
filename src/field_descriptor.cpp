@@ -60,7 +60,7 @@ int field_descriptor::read(
     MPI_File f;
 
     MPI_File_open(
-            MPI_COMM_WORLD,
+            this->comm,
             fname,
             MPI_MODE_RDONLY,
             info,
@@ -92,7 +92,7 @@ int field_descriptor::write(
     MPI_File f;
 
     MPI_File_open(
-            MPI_COMM_WORLD,
+            this->comm,
             fname,
             MPI_MODE_CREATE | MPI_MODE_WRONLY,
             info,
@@ -155,7 +155,7 @@ int field_descriptor::transpose(
     tplan = fftwf_mpi_plan_transpose(
             this->sizes[0], dim1,
             input, output,
-            MPI_COMM_WORLD,
+            this->comm,
             FFTW_ESTIMATE);
     fftwf_execute(tplan);
     fftwf_destroy_plan(tplan);
@@ -188,7 +188,7 @@ int field_descriptor::transpose(
                     FFTW_MPI_DEFAULT_BLOCK,
                     FFTW_MPI_DEFAULT_BLOCK,
                     (float*)input, (float*)output,
-                    MPI_COMM_WORLD,
+                    this->comm,
                     FFTW_ESTIMATE);
             fftwf_execute(tplan);
             fftwf_destroy_plan(tplan);
