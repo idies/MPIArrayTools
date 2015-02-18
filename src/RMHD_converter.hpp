@@ -13,30 +13,30 @@ class RMHD_converter
 {
     public:
         /* members */
-        field_descriptor *f0c = NULL; // descriptor for 2D input
-        field_descriptor *f1c = NULL; // descriptor for 2D transposed input
-        field_descriptor *f2c = NULL; // descriptor for 3D fully transposed input
-        field_descriptor *f3c = NULL, *f3r=NULL; // descriptors for FFT
+        field_descriptor *f0c; // descriptor for 2D input
+        field_descriptor *f1c; // descriptor for 2D transposed input
+        field_descriptor *f2c; // descriptor for 3D fully transposed input
+        field_descriptor *f3c, *f3r; // descriptors for FFT
 
         // descriptor for N0*2 x N1 x N2 real space array
-        field_descriptor *f4r = NULL;
+        field_descriptor *f4r;
 
         // descriptor for N0/8 x N1/8 x N2/8 x 8 x 8 x 8 x 2 array
-        field_descriptor *drcubbie = NULL;
+        field_descriptor *drcubbie;
         // descriptor for NZ x 8 x 8 x 8 x 2 array
-        field_descriptor *dzcubbie = NULL;
+        field_descriptor *dzcubbie;
 
         // descriptor for (NZ/nfiles) x 8 x 8 x 8 x 2 array
-        field_descriptor *dout = NULL;
+        field_descriptor *dout;
 
         // communicator to use for output
         MPI_Comm out_communicator;
         int out_group;
 
-        fftwf_complex *c0  = NULL; // array to store 2D input
-        fftwf_complex *c12 = NULL; // array to store transposed input
-        fftwf_complex *c3  = NULL; // array to store resized Fourier data
-        float *r3          = NULL; // array to store real space data
+        fftwf_complex *c0 ; // array to store 2D input
+        fftwf_complex *c12; // array to store transposed input
+        fftwf_complex *c3 ; // array to store resized Fourier data
+        float *r3         ; // array to store real space data
 
         fftwf_plan complex2real0;
         fftwf_plan complex2real1;
