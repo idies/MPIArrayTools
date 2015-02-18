@@ -1,2 +1,3 @@
 obj/*
 .ipynb_checkpoints/*
+.*.swp
