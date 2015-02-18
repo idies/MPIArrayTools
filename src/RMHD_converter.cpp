@@ -254,7 +254,7 @@ int RMHD_converter::convert(
 
     fftwf_free(rtmp);
     char temp_char[200];
-    sprintf(temp_char, "%s_Z%.7lx\0", ofile, this->out_group*this->dout->sizes[0]);
+    sprintf(temp_char, "%s_Z%.7x", ofile, this->out_group*this->dout->sizes[0]);
     this->dout->write(
             temp_char,
             this->r3 + this->out_group*this->dout->sizes[0]);
