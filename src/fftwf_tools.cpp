@@ -49,9 +49,9 @@ int fftwf_copy_complex_array(
             (myrank == fi->rank(ii0)))
         {
             std::copy(
-                    ai + (ii0 - fi->starts[0]    )*fi->slice_size,
-                    ai + (ii0 - fi->starts[0] + 1)*fi->slice_size,
-                    buffer);
+                    (float*)(ai + (ii0 - fi->starts[0]    )*fi->slice_size),
+                    (float*)(ai + (ii0 - fi->starts[0] + 1)*fi->slice_size),
+                    (float*)buffer);
         }
         else
         {
@@ -94,9 +94,9 @@ int fftwf_copy_complex_array(
                         continue;
                 }
                 std::copy(
-                        (buffer + ii1*fi->sizes[2]),
-                        (buffer + ii1*fi->sizes[2] + min_fast_dim),
-                        (ao + ((oi0 - fo->starts[0])*fo->sizes[1] + oi1)*fo->sizes[2]));
+                        (float*)(buffer + ii1*fi->sizes[2]),
+                        (float*)(buffer + ii1*fi->sizes[2] + min_fast_dim),
+                        (float*)(ao + ((oi0 - fo->starts[0])*fo->sizes[1] + oi1)*fo->sizes[2]));
             }
         }
     }

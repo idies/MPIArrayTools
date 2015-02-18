@@ -59,12 +59,11 @@ int field_descriptor::read(
     MPI_Info_create(&info);
     MPI_File f;
 
-    MPI_File_open(
+    f = MPI::File::Open(
             this->comm,
             fname,
             MPI_MODE_RDONLY,
-            info,
-            &f);
+            info);
     MPI_File_set_view(
             f,
             0,
@@ -91,12 +90,11 @@ int field_descriptor::write(
     MPI_Info_create(&info);
     MPI_File f;
 
-    MPI_File_open(
+    f = MPI::File::Open(
             this->comm,
             fname,
             MPI_MODE_CREATE | MPI_MODE_WRONLY,
-            info,
-            &f);
+            info);
     MPI_File_set_view(
             f,
             0,
