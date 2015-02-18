@@ -4,10 +4,15 @@ DEFINES =
 CFLAGS  = -Wall \
 		  -O2
 
+# advice from
+# https://software.intel.com/en-us/forums/topic/298872
+# always link against both libimf and libm
 LIBS = -lfftw3_mpi \
 	   -lfftw3 \
 	   -lfftw3f_mpi \
-	   -lfftw3f
+	   -lfftw3f \
+	   -limf \
+	   -lm
 
 vpath %.cpp ./src/
 
