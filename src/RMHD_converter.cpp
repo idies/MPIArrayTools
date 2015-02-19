@@ -129,7 +129,7 @@ int RMHD_converter::convert(
     fftwf_clip_zero_padding(this->f4r, this->r3);
 
     // new array where mixed components will be placed
-    float *rtmp = fftwf_alloc_real( 4*this->f3c->local_size);
+    float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
 
     // mix components
     for (int k = 0; k < this->f3r->local_size; k++)
