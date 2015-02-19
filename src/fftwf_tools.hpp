@@ -5,6 +5,8 @@
 
 #define FFTWF_TOOLS
 
+extern int myrank, nprocs;
+
 /* given two arrays of the same dimension, we do a simple resize in
  * Fourier space: either chop off high modes, or pad with zeros.
  * the arrays are assumed to use 3D mpi fftw layout.

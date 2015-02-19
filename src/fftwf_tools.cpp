@@ -2,8 +2,9 @@
 #include <algorithm>
 #include <iostream>
 #include "field_descriptor.hpp"
+#include "fftwf_tools.hpp"
 
-extern int myrank, nprocs;
+
 
 // should I use a template here?
 int fftwf_copy_complex_array(
