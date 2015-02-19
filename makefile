@@ -11,7 +11,7 @@ LIBS = -lfftw3_mpi \
 	   -lfftw3 \
 	   -lfftw3f_mpi \
 	   -lfftw3f \
-	   -limf \
+#	   -limf \
 	   -lm
 
 vpath %.cpp ./src/
@@ -19,6 +19,7 @@ vpath %.cpp ./src/
 src := \
 	field_descriptor.cpp \
 	fftwf_tools.cpp \
+	Morton_shuffler.cpp \
 	RMHD_converter.cpp
 
 obj := $(patsubst %.cpp, ./obj/%.o, ${src})
