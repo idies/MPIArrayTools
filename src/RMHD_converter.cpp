@@ -1,5 +1,6 @@
 #include "RMHD_converter.hpp"
 #include <string>
+#include <iostream>
 
 extern int myrank, nprocs;
 
@@ -52,6 +53,7 @@ RMHD_converter::RMHD_converter(
     }
     int n[7];
 
+    proc_print_err_message("aloha 00");
     // first 3 arguments are dimensions for input array
     // i.e. actual dimensions for the Fourier representation.
     // NOT real space grid dimensions
@@ -62,6 +64,7 @@ RMHD_converter::RMHD_converter(
     n[1] = n2;
     this->f0c = new field_descriptor(2, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
+    proc_print_err_message("aloha 01");
     // f1c will be pointing at the input array after it has been
     // transposed in 2D, therefore we have this correspondence:
     // f0c->sizes[0] = f1c->sizes[1]*f1c->sizes[2]
@@ -70,18 +73,21 @@ RMHD_converter::RMHD_converter(
     n[2] = n1;
     this->f1c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
+    proc_print_err_message("aloha 02");
     // the description for the fully transposed field
     n[0] = n2;
     n[1] = n1;
     n[2] = n0;
     this->f2c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
+    proc_print_err_message("aloha 03");
     // following 3 arguments are dimensions for real space grid dimensions
     // f3r and f3c will be allocated in this call
     fftwf_get_descriptors_3D(
             N0, N1, N2,
             &this->f3r, &this->f3c);
 
+    proc_print_err_message("aloha 04");
     //allocate fields
     this->c0  = fftwf_alloc_complex(this->f0c->local_size);
     this->c12 = fftwf_alloc_complex(this->f1c->local_size);
@@ -89,6 +95,7 @@ RMHD_converter::RMHD_converter(
     // 4 instead of 2, because we have 2 fields to write
     this->r3  = fftwf_alloc_real( 4*this->f3c->local_size);
 
+    proc_print_err_message("aloha 05");
     // allocate plans
     this->complex2real0 = fftwf_mpi_plan_dft_c2r_3d(
             f3r->sizes[0], f3r->sizes[1], f3r->sizes[2],
@@ -101,20 +108,24 @@ RMHD_converter::RMHD_converter(
             MPI_COMM_WORLD,
             FFTW_PATIENT);
 
+    proc_print_err_message("aloha 06");
     // various descriptions for the real data
     n[0] = N0*2;
     n[1] = N1;
     n[2] = N2;
     this->f4r = new field_descriptor(3, n, MPI_REAL4, MPI_COMM_WORLD);
+    proc_print_err_message("aloha 07");
     n[0] = N0/8;
     n[1] = N1/8;
     n[2] = N2/8;
     n[3] = 8*8*8*2;
     this->drcubbie = new field_descriptor(4, n, MPI_REAL4, MPI_COMM_WORLD);
+    proc_print_err_message("aloha 08");
     n[0] = (N0/8) * (N1/8) * (N2/8);
     n[1] = 8*8*8*2;
     this->dzcubbie = new field_descriptor(2, n, MPI_REAL4, MPI_COMM_WORLD);
 
+    proc_print_err_message("aloha 09");
     //set up output file descriptor
     int out_rank, out_nprocs;
     out_nprocs = nprocs/nfiles;
@@ -123,6 +134,7 @@ RMHD_converter::RMHD_converter(
     n[0] = ((N0/8) * (N1/8) * (N2/8)) / nfiles;
     n[1] = 8*8*8*2;
     MPI_Comm_split(MPI_COMM_WORLD, this->out_group, out_rank, &this->out_communicator);
+    proc_print_err_message("aloha 10");
     this->dout = new field_descriptor(2, n, MPI_REAL4, this->out_communicator);
 }
 
