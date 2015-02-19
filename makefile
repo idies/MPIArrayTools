@@ -4,15 +4,23 @@ DEFINES =
 CFLAGS  = -Wall \
 		  -O2
 
-# advice from
-# https://software.intel.com/en-us/forums/topic/298872
-# always link against both libimf and libm
 LIBS = -lfftw3_mpi \
 	   -lfftw3 \
 	   -lfftw3f_mpi \
-	   -lfftw3f \
-#	   -limf \
-	   -lm
+	   -lfftw3f
+
+COMPILER_VERSION := $(shell ${MPICXX} --version)
+
+ifneq (,$(findstring ICC,$(COMPILER_VERSION)))
+	# using intel compiler
+	# advice from
+	# https://software.intel.com/en-us/forums/topic/298872
+	# always link against both libimf and libm
+    LIBS += -limf \
+			-lm
+else
+    # not using intel compiler
+endif
 
 vpath %.cpp ./src/
 

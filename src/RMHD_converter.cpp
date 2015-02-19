@@ -139,7 +139,6 @@ int RMHD_converter::convert(
     this->s->shuffle(rtmp, ofile);
 
     fftwf_free(rtmp);
-
     return EXIT_SUCCESS;
 }
 
