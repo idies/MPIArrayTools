@@ -22,7 +22,7 @@ Morton_shuffler::Morton_shuffler(
     n[0] = N0;
     n[1] = N1;
     n[2] = N2;
-    n[3] = d;
+    n[3] = this->d;
     this->dinput = new field_descriptor(4, n, MPI_REAL4, MPI_COMM_WORLD);
     n[0] = N0/8;
     n[1] = N1/8;
@@ -126,6 +126,7 @@ int Morton_shuffler::shuffle(
             base_fname,
             this->out_group*this->doutput->sizes[0]);
     this->doutput->write(temp_char, rtmp);
+    //this->doutput->write(temp_char, rtmp + this->out_group*this->doutput->sizes[0]);
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
 }
