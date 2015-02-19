@@ -257,7 +257,7 @@ int RMHD_converter::convert(
     sprintf(temp_char, "%s_Z%.7x", ofile, this->out_group*this->dout->sizes[0]);
     this->dout->write(
             temp_char,
-            this->r3 + this->out_group*this->dout->sizes[0]);
+            this->r3);
     return EXIT_SUCCESS;
 }
 
