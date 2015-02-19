@@ -126,7 +126,6 @@ int Morton_shuffler::shuffle(
             base_fname,
             this->out_group*this->doutput->sizes[0]);
     this->doutput->write(temp_char, rtmp);
-    //this->doutput->write(temp_char, rtmp + this->out_group*this->doutput->sizes[0]);
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
 }
