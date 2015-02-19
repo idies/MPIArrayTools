@@ -128,18 +128,18 @@ int fftwf_get_descriptors_3D(
         field_descriptor **fr,
         field_descriptor **fc)
 {
-    // I need to check whether there's already something there...
-    if (*fr != NULL) delete *fr;
-    if (*fc != NULL) delete *fc;
+    proc_print_err_message("fftwf_get_descriptors 00");
     int ntmp[3];
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2;
     *fr = new field_descriptor(3, ntmp, MPI_REAL4, MPI_COMM_WORLD);
+    proc_print_err_message("fftwf_get_descriptors 01");
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2/2+1;
     *fc = new field_descriptor(3, ntmp, MPI_COMPLEX8, MPI_COMM_WORLD);
+    proc_print_err_message("fftwf_get_descriptors 02");
     return EXIT_SUCCESS;
 }
 

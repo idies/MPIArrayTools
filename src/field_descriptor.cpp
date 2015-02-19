@@ -3,6 +3,8 @@
 #include <iostream>
 #include "field_descriptor.hpp"
 
+extern int myrank, nprocs;
+
 field_descriptor::field_descriptor(
         int ndims,
         int *n,
@@ -233,3 +235,12 @@ field_descriptor* field_descriptor::get_transpose()
     return new field_descriptor(this->ndims, n, this->mpi_dtype, this->comm);
 }
 
+void proc_print_err_message(const char *message)
+{
+    for (int i = 0; i < nprocs; i++)
+    {
+        if (myrank == i)
+            std::cerr << i << " " << message << std::endl;
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+}

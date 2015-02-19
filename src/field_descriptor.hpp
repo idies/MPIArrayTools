@@ -75,5 +75,7 @@ int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
 
+void proc_print_err_message(const char *message);
+
 #endif//FIELD_DESCRIPTOR
 

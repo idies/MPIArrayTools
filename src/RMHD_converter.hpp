@@ -3,11 +3,11 @@
 #include <iostream>
 #include "field_descriptor.hpp"
 #include "fftwf_tools.hpp"
+#include "Morton_shuffler.hpp"
 
 #ifndef RMHD_CONVERTER
 
 #define RMHD_CONVERTER
-
 
 class RMHD_converter
 {
@@ -21,17 +21,7 @@ class RMHD_converter
         // descriptor for N0*2 x N1 x N2 real space array
         field_descriptor *f4r;
 
-        // descriptor for N0/8 x N1/8 x N2/8 x 8 x 8 x 8 x 2 array
-        field_descriptor *drcubbie;
-        // descriptor for NZ x 8 x 8 x 8 x 2 array
-        field_descriptor *dzcubbie;
-
-        // descriptor for (NZ/nfiles) x 8 x 8 x 8 x 2 array
-        field_descriptor *dout;
-
-        // communicator to use for output
-        MPI_Comm out_communicator;
-        int out_group;
+        Morton_shuffler *s;
 
         fftwf_complex *c0 ; // array to store 2D input
         fftwf_complex *c12; // array to store transposed input
