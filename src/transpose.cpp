@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
                 " with %d processes.\n",
                 argc - 1,
                 nprocs);
-    f0 = new field_descriptor(argc - 1, n, MPI_FLOAT);
+    f0 = new field_descriptor(argc - 1, n, MPI_FLOAT, MPI_COMM_WORLD);
     f1 = f0->get_transpose();
 
     float *a0, *a1;
