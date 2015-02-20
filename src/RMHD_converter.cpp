@@ -131,9 +131,7 @@ int RMHD_converter::convert(
     float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
 
     // mix components
-    for (int k = 0; k < this->f3r->local_size; k++)
-        for (int j = 0; j < 2; j++)
-                rtmp[k*2 + j] = this->r3[j*this->f3r->local_size + k];
+    this->f3r->interleave(this->r3, rtmp, 2);
 
     this->s->shuffle(rtmp, ofile);
 
