@@ -55,11 +55,9 @@ Morton_shuffler::~Morton_shuffler()
 
 int Morton_shuffler::shuffle(
         float *a,
+        float *rtmp,
         const char *base_fname)
 {
-    // array where shuffled data will be placed
-    float *rtmp = fftwf_alloc_real(this->drcubbie->local_size);
-
     // shuffle into z order
     ptrdiff_t z, zz;
     int rid, zid;
@@ -125,7 +123,6 @@ int Morton_shuffler::shuffle(
             base_fname,
             this->out_group*this->doutput->sizes[0]);
     this->doutput->write(temp_char, rtmp);
-    fftwf_free(rtmp);
     return EXIT_SUCCESS;
 }
 

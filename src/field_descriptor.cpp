@@ -232,6 +232,7 @@ int field_descriptor::interleave(
         float *output,
         int dim)
 {
+    // TODO: implement inplace interleaver
     for (int k = 0; k < this->local_size; k++)
         for (int j = 0; j < dim; j++)
                 output[k*dim + j] = input[j*this->local_size + k];

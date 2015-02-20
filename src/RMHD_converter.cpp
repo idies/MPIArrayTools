@@ -133,7 +133,7 @@ int RMHD_converter::convert(
     // mix components
     this->f3r->interleave(this->r3, rtmp, 2);
 
-    this->s->shuffle(rtmp, ofile);
+    this->s->shuffle(rtmp, this->r3, ofile);
 
     fftwf_free(rtmp);
     return EXIT_SUCCESS;

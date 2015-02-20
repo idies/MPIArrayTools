@@ -70,7 +70,10 @@ class Morton_shuffler
                 int nfiles);
         ~Morton_shuffler();
 
-        int shuffle(float *a, const char *base_fname);
+        int shuffle(
+                float *regular_data,
+                float *shuffled_data,
+                const char *base_fname);
 };
 
 #endif//MORTON_SHUFFLER
