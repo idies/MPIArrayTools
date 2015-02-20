@@ -22,17 +22,15 @@ else
     # not using intel compiler
 endif
 
-vpath %.cpp ./src/
-
 src := \
-	field_descriptor.cpp \
-	fftwf_tools.cpp \
-	Morton_shuffler.cpp \
-	RMHD_converter.cpp
+	./src/field_descriptor.cpp \
+	./src/fftwf_tools.cpp \
+	./src/Morton_shuffler.cpp \
+	./src/RMHD_converter.cpp
 
-obj := $(patsubst %.cpp, ./obj/%.o, ${src})
+obj := $(patsubst ./src/%.cpp, ./obj/%.o, ${src})
 
-./obj/%.o: %.cpp
+./obj/%.o: ./src/%.cpp
 	${MPICXX} ${DEFINES} \
 		${CFLAGS} \
 		-c $^ -o $@
@@ -69,8 +67,7 @@ resize_and_transpose: ${obj} ./obj/resize_and_transpose.o
 
 full: ${obj} ./obj/full.o
 	${LINKER} \
-		./obj/full.o \
-		${obj} \
+		$^ \
 		-o $@ \
 		${LIBS} \
 		${NULL}
