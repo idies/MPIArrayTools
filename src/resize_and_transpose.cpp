@@ -34,14 +34,14 @@ int main(int argc, char *argv[])
     // (which is generally an even number)
     ni[0] = atoi(argv[1])*atoi(argv[2]);
     ni[1] = atoi(argv[3]);
-    f0c = new field_descriptor(2, ni, MPI_COMPLEX8);
+    f0c = new field_descriptor(2, ni, MPI_COMPLEX8, MPI_COMM_WORLD);
     // f1c will be pointing at the input array after it has been
     // transposed, therefore we have this correspondence:
     // f0c->sizes[0] = f1c->sizes[1]*f1c->sizes[2]
     ni[0] = atoi(argv[3]);
     ni[1] = atoi(argv[1]);
     ni[2] = atoi(argv[2]);
-    f1c = new field_descriptor(3, ni, MPI_COMPLEX8);
+    f1c = new field_descriptor(3, ni, MPI_COMPLEX8, MPI_COMM_WORLD);
 
     fftwf_complex *c0, *c1, *c2;
     c0 = fftwf_alloc_complex(f0c->local_size);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     ni[0] = atoi(argv[3]);
     ni[1] = atoi(argv[2]);
     ni[2] = atoi(argv[1]);
-    f1c = new field_descriptor(3, ni, MPI_COMPLEX8);
+    f1c = new field_descriptor(3, ni, MPI_COMPLEX8, MPI_COMM_WORLD);
 
     // following 3 arguments are dimensions for output array
     // i.e. real space grid dimensions

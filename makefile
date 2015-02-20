@@ -22,60 +22,33 @@ else
     # not using intel compiler
 endif
 
-vpath %.cpp ./src/
+base_files := \
+	field_descriptor \
+	fftwf_tools \
+	Morton_shuffler \
+	RMHD_converter
 
-src := \
-	field_descriptor.cpp \
-	fftwf_tools.cpp \
-	Morton_shuffler.cpp \
-	RMHD_converter.cpp
+#headers := $(patsubst %, ./src/%.hpp, ${base_files})
+src := $(patsubst %, ./src/%.cpp, ${base_files})
+obj := $(patsubst %, ./obj/%.o, ${base_files})
 
-obj := $(patsubst %.cpp, ./obj/%.o, ${src})
+.PRECIOUS: ./obj/%.o
 
-./obj/%.o: %.cpp
+./obj/%.o: ./src/%.cpp
 	${MPICXX} ${DEFINES} \
 		${CFLAGS} \
 		-c $^ -o $@
 
-exec = \
-	   transpose \
-	   resize \
-	   resize_and_transpose \
-	   full
+base: ${obj}
 
-transpose: ${obj} ./obj/transpose.o
+%.elf: ${obj} ./obj/%.o
 	${LINKER} \
-		./obj/transpose.o \
-		${obj} \
-		-o $@ \
-		${LIBS} \
-		${NULL}
-
-resize: ${obj} ./obj/resize.o
-	${LINKER} \
-		./obj/resize.o \
-		${obj} \
-		-o $@ \
-		${LIBS} \
-		${NULL}
-
-resize_and_transpose: ${obj} ./obj/resize_and_transpose.o
-	${LINKER} \
-		./obj/resize_and_transpose.o \
-		${obj} \
-		-o $@ \
-		${LIBS} \
-		${NULL}
-
-full: ${obj} ./obj/full.o
-	${LINKER} \
-		./obj/full.o \
-		${obj} \
+		$^ \
 		-o $@ \
 		${LIBS} \
 		${NULL}
 
 clean:
-	rm ./obj/*.o
-	rm -f ${exec}
+	rm -f ./obj/*.o
+	rm -f *.elf
 

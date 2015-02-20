@@ -2,7 +2,6 @@
 #include <string>
 #include <iostream>
 
-extern int myrank, nprocs;
 
 
 RMHD_converter::RMHD_converter(

@@ -9,6 +9,8 @@
 
 #define RMHD_CONVERTER
 
+extern int myrank, nprocs;
+
 class RMHD_converter
 {
     public:

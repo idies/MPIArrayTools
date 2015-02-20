@@ -8,6 +8,8 @@
 
 #define MORTON_SHUFFLER
 
+extern int myrank, nprocs;
+
 inline ptrdiff_t part1by2(ptrdiff_t x)
 {
     ptrdiff_t n = x & 0x000003ff;

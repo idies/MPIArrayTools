@@ -1,7 +1,6 @@
 #include "Morton_shuffler.hpp"
 #include <iostream>
 
-extern int myrank, nprocs;
 
 Morton_shuffler::Morton_shuffler(
         int N0, int N1, int N2,
