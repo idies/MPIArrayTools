@@ -54,6 +54,11 @@ class field_descriptor
                 fftwf_complex *input,
                 fftwf_complex *output = NULL);
 
+        int interleave(
+                float *input,
+                float *output,
+                int dim);
+
         inline int rank(int i0)
         {
             return i0 / this->subsizes[0];

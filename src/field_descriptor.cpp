@@ -227,6 +227,17 @@ int field_descriptor::transpose(
     return EXIT_SUCCESS;
 }
 
+int field_descriptor::interleave(
+        float *input,
+        float *output,
+        int dim)
+{
+    for (int k = 0; k < this->local_size; k++)
+        for (int j = 0; j < dim; j++)
+                output[k*dim + j] = input[j*this->local_size + k];
+    return EXIT_SUCCESS;
+}
+
 field_descriptor* field_descriptor::get_transpose()
 {
     int n[this->ndims];
