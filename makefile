@@ -32,10 +32,14 @@ base_files := \
 src := $(patsubst %, ./src/%.cpp, ${base_files})
 obj := $(patsubst %, ./obj/%.o, ${base_files})
 
+.PRECIOUS: ./obj/%.o
+
 ./obj/%.o: ./src/%.cpp
 	${MPICXX} ${DEFINES} \
 		${CFLAGS} \
 		-c $^ -o $@
+
+base: ${obj}
 
 %.elf: ${obj} ./obj/%.o
 	${LINKER} \
