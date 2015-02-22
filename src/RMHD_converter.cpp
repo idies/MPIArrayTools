@@ -110,7 +110,6 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3);
     fftwf_execute(this->complex2real0);
-    proc_print_err_message("0 field read and transformed");
 
     //read second field
     this->f0c->read(ifile1, (void*)this->c0);
@@ -120,20 +119,16 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3 + this->f3c->local_size);
     fftwf_execute(this->complex2real1);
-    proc_print_err_message("1 field read and transformed");
 
     fftwf_clip_zero_padding(this->f4r, this->r3);
-    proc_print_err_message("clipped zero padding");
 
     // new array where mixed components will be placed
     float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
 
     // mix components
     this->f3r->interleave(this->r3, rtmp, 2);
-    proc_print_err_message("interleaved array");
 
     this->s->shuffle(rtmp, this->r3, ofile);
-    proc_print_err_message("did zshuffle");
 
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
