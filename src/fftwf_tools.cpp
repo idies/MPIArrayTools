@@ -33,25 +33,8 @@ int fftwf_copy_complex_array(
     int64_t oi0, oi1;
     int64_t delta1, delta0;
     int irank, orank;
-    char bla[100];
     delta0 = (fo->sizes[0] - fi->sizes[0]);
     delta1 = (fo->sizes[1] - fi->sizes[1]);
-    //for (int64_t i = 0; i < fi->sizes[0]; i++)
-    //{
-    //    sprintf(
-    //            bla,
-    //            "i = %d, irank = %d",
-    //            i, fi->rank[i]);
-    //    proc_print_err_message(bla);
-    //}
-    //for (int64_t i = 0; i < fo->sizes[0]; i++)
-    //{
-    //    sprintf(
-    //            bla,
-    //            "i = %d, orank = %d",
-    //            i, fo->rank[i]);
-    //    proc_print_err_message(bla);
-    //}
     for (ii0=0; ii0 < fi->sizes[0]; ii0++)
     {
         if (ii0 <= fi->sizes[0]/2)
@@ -68,11 +51,6 @@ int fftwf_copy_complex_array(
         }
         irank = fi->rank[ii0];
         orank = fo->rank[oi0];
-        //sprintf(
-        //        bla,
-        //        "inside ii0 loop, ii0 = %ld, iid = %d, oid = %d",
-        //        ii0, irank, orank);
-        //proc_print_err_message(bla);
         if ((irank == orank) &&
             (irank == fi->myrank))
         {
@@ -85,7 +63,6 @@ int fftwf_copy_complex_array(
         {
             if (fi->myrank == irank)
             {
-    //            proc_print_err_message("sending");
                 MPI_Send(
                         (void*)(ai + (ii0-fi->starts[0])*fi->slice_size),
                         fi->slice_size,
@@ -93,11 +70,9 @@ int fftwf_copy_complex_array(
                         orank,
                         ii0,
                         fi->comm);
-     //           proc_print_err_message("sent");
             }
             if (fi->myrank == orank)
             {
-      //          proc_print_err_message("receiving");
                 MPI_Recv(
                         (void*)(buffer),
                         fi->slice_size,
@@ -106,7 +81,6 @@ int fftwf_copy_complex_array(
                         ii0,
                         fi->comm,
                         MPI_STATUS_IGNORE);
-      //          proc_print_err_message("received");
             }
         }
         if (fi->myrank == orank)

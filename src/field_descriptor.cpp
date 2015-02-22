@@ -66,15 +66,6 @@ field_descriptor::field_descriptor(
             MPI_INT,
             MPI_SUM,
             this->comm);
-    char bla[200];
-    for (int i = 0; i < this->sizes[0]; i++)
-    {
-        sprintf(
-                bla,
-                "i = %d, irank = %d",
-                i, this->rank[i]);
-        proc_print_err_message(bla);
-    }
     delete[] local_rank;
 }
 
