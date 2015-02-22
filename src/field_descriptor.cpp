@@ -18,12 +18,23 @@ field_descriptor::field_descriptor(
     this->sizes    = new int[ndims];
     this->subsizes = new int[ndims];
     this->starts   = new int[ndims];
+    ptrdiff_t *nfftw = new ptrdiff_t[ndims];
+    ptrdiff_t local_n0, local_0_start;
+    for (int i = 0; i < this->ndims; i++)
+        nfftw[i] = n[i];
+    this->local_size = fftwf_mpi_local_size_many(
+            this->ndims,
+            nfftw,
+            1,
+            FFTW_MPI_DEFAULT_BLOCK,
+            this->comm,
+            &local_n0,
+            &local_0_start);
     this->sizes[0] = n[0];
-    this->subsizes[0] = n[0]/this->nprocs;
-    this->starts[0] = this->myrank*(n[0]/this->nprocs);
+    this->subsizes[0] = local_n0;
+    this->starts[0] = local_0_start;
     this->mpi_dtype = element_type;
     this->slice_size = 1;
-    this->local_size = this->subsizes[0];
     this->full_size = this->sizes[0];
     for (int i = 1; i < this->ndims; i++)
     {
@@ -31,7 +42,6 @@ field_descriptor::field_descriptor(
         this->subsizes[i] = n[i];
         this->starts[i] = 0;
         this->slice_size *= this->subsizes[i];
-        this->local_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
     }
     MPI_Type_create_subarray(
@@ -43,6 +53,20 @@ field_descriptor::field_descriptor(
             this->mpi_dtype,
             &this->mpi_array_dtype);
     MPI_Type_commit(&this->mpi_array_dtype);
+    this->rank = new int[this->sizes[0]];
+    int *local_rank = new int[this->sizes[0]];
+    std::fill_n(local_rank, this->sizes[0], 0);
+    for (int i = 0; i < this->sizes[0]; i++)
+        if (i >= this->starts[0] && i < this->starts[0] + this->subsizes[0])
+            local_rank[i] = this->myrank;
+    MPI_Allreduce(
+            local_rank,
+            this->rank,
+            this->sizes[0],
+            MPI_INT,
+            MPI_SUM,
+            this->comm);
+    delete[] local_rank;
 }
 
 field_descriptor::~field_descriptor()
@@ -50,6 +74,7 @@ field_descriptor::~field_descriptor()
     delete[] this->sizes;
     delete[] this->subsizes;
     delete[] this->starts;
+    delete[] this->rank;
     MPI_Type_free(&this->mpi_array_dtype);
 }
 
@@ -123,37 +148,28 @@ int field_descriptor::transpose(
     // for 3D transposition, the input data is messed up
     fftwf_plan tplan;
     ptrdiff_t dim1;
-    switch (this->ndims)
+    if (this->ndims == 3)
     {
-        case 2:
-            dim1 = this->sizes[1];
-            break;
-        case 3:
-            // transpose the two local dimensions 1 and 2
-            dim1 = this->sizes[1]*this->sizes[2];
-            float *atmp;
-            atmp = (float*)malloc(dim1*sizeof(float));
-            for (int k = 0; k < this->subsizes[0]; k++)
-            {
-                // put transposed slice in atmp
-                for (int j = 0; j < this->sizes[1]; j++)
-                    for (int i = 0; i < this->sizes[2]; i++)
-                        atmp[i*this->sizes[1] + j] =
-                            input[(k*this->sizes[1] + j)*this->sizes[2] + i];
-                // copy back transposed slice
-                for (int j = 0; j < this->sizes[2]; j++)
-                    for (int i = 0; i < this->sizes[1]; i++)
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i] =
-                            atmp[j*this->sizes[1] + i];
-            }
-            free(atmp);
-            break;
-        default:
-            return EXIT_FAILURE;
-            break;
+        // transpose the two local dimensions 1 and 2
+        float *atmp;
+        atmp = fftwf_alloc_real(this->slice_size);
+        for (int k = 0; k < this->subsizes[0]; k++)
+        {
+            // put transposed slice in atmp
+            for (int j = 0; j < this->sizes[1]; j++)
+                for (int i = 0; i < this->sizes[2]; i++)
+                    atmp[i*this->sizes[1] + j] =
+                        input[(k*this->sizes[1] + j)*this->sizes[2] + i];
+            // copy back transposed slice
+            std::copy(
+                    atmp,
+                    atmp + this->slice_size,
+                    input + k*this->slice_size);
+        }
+        fftwf_free(atmp);
     }
     tplan = fftwf_mpi_plan_transpose(
-            this->sizes[0], dim1,
+            this->sizes[0], this->slice_size,
             input, output,
             this->comm,
             FFTW_ESTIMATE);
@@ -170,13 +186,6 @@ int field_descriptor::transpose(
     {
         case 2:
             // do a global transpose over the 2 dimensions
-            if (this->sizes[0] % this->nprocs != 0 || this->sizes[1] % this->nprocs != 0)
-            {
-                std::cerr << "you're trying to work with an array that cannot "
-                             "be evenly distributed among processes.\n"
-                          << std::endl;
-                return EXIT_FAILURE;
-            }
             if (output == NULL)
             {
                 std::cerr << "bad arguments for transpose.\n" << std::endl;
@@ -209,14 +218,10 @@ int field_descriptor::transpose(
                             input[(k*this->sizes[1] + j)*this->sizes[2] + i][1];
                     }
                 // copy back transposed slice
-                for (int j = 0; j < this->sizes[2]; j++)
-                    for (int i = 0; i < this->sizes[1]; i++)
-                    {
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][0] =
-                            atmp[j*this->sizes[1] + i][0];
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][1] =
-                            atmp[j*this->sizes[1] + i][1];
-                    }
+                std::copy(
+                        (float*)(atmp),
+                        (float*)(atmp + this->slice_size),
+                        (float*)(input + k*this->slice_size));
             }
             fftwf_free(atmp);
             break;
@@ -224,6 +229,18 @@ int field_descriptor::transpose(
             return EXIT_FAILURE;
             break;
     }
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::interleave(
+        float *input,
+        float *output,
+        int dim)
+{
+    // TODO: implement inplace interleaver
+    for (int k = 0; k < this->local_size; k++)
+        for (int j = 0; j < dim; j++)
+                output[k*dim + j] = input[j*this->local_size + k];
     return EXIT_SUCCESS;
 }
 

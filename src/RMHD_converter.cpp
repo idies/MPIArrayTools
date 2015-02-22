@@ -18,7 +18,6 @@ RMHD_converter::RMHD_converter(
     }
     int n[7];
 
-    proc_print_err_message("aloha 00");
     // first 3 arguments are dimensions for input array
     // i.e. actual dimensions for the Fourier representation.
     // NOT real space grid dimensions
@@ -29,7 +28,6 @@ RMHD_converter::RMHD_converter(
     n[1] = n2;
     this->f0c = new field_descriptor(2, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
-    proc_print_err_message("aloha 01");
     // f1c will be pointing at the input array after it has been
     // transposed in 2D, therefore we have this correspondence:
     // f0c->sizes[0] = f1c->sizes[1]*f1c->sizes[2]
@@ -38,21 +36,18 @@ RMHD_converter::RMHD_converter(
     n[2] = n1;
     this->f1c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
-    proc_print_err_message("aloha 02");
     // the description for the fully transposed field
     n[0] = n2;
     n[1] = n1;
     n[2] = n0;
     this->f2c = new field_descriptor(3, n, MPI_COMPLEX8, MPI_COMM_WORLD);
 
-    proc_print_err_message("aloha 03");
     // following 3 arguments are dimensions for real space grid dimensions
     // f3r and f3c will be allocated in this call
     fftwf_get_descriptors_3D(
             N0, N1, N2,
             &this->f3r, &this->f3c);
 
-    proc_print_err_message("aloha 04");
     //allocate fields
     this->c0  = fftwf_alloc_complex(this->f0c->local_size);
     this->c12 = fftwf_alloc_complex(this->f1c->local_size);
@@ -60,7 +55,6 @@ RMHD_converter::RMHD_converter(
     // 4 instead of 2, because we have 2 fields to write
     this->r3  = fftwf_alloc_real( 4*this->f3c->local_size);
 
-    proc_print_err_message("aloha 05");
     // allocate plans
     this->complex2real0 = fftwf_mpi_plan_dft_c2r_3d(
             f3r->sizes[0], f3r->sizes[1], f3r->sizes[2],
@@ -115,6 +109,7 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3);
     fftwf_execute(this->complex2real0);
+    proc_print_err_message("0 field read and transformed");
 
     //read second field
     this->f0c->read(ifile1, (void*)this->c0);
@@ -124,18 +119,20 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3);
     fftwf_execute(this->complex2real1);
+    proc_print_err_message("1 field read and transformed");
 
     fftwf_clip_zero_padding(this->f4r, this->r3);
+    proc_print_err_message("clipped zero padding");
 
     // new array where mixed components will be placed
     float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
 
     // mix components
-    for (int k = 0; k < this->f3r->local_size; k++)
-        for (int j = 0; j < 2; j++)
-                rtmp[k*2 + j] = this->r3[j*this->f3r->local_size + k];
+    this->f3r->interleave(this->r3, rtmp, 2);
+    proc_print_err_message("interleaved array");
 
-    this->s->shuffle(rtmp, ofile);
+    this->s->shuffle(rtmp, this->r3, ofile);
+    proc_print_err_message("did zshuffle");
 
     fftwf_free(rtmp);
     return EXIT_SUCCESS;

@@ -14,6 +14,7 @@ class field_descriptor
         int *subsizes;
         int *starts;
         int ndims;
+        int *rank;
         ptrdiff_t slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
         int myrank, nprocs;
@@ -54,10 +55,10 @@ class field_descriptor
                 fftwf_complex *input,
                 fftwf_complex *output = NULL);
 
-        inline int rank(int i0)
-        {
-            return i0 / this->subsizes[0];
-        }
+        int interleave(
+                float *input,
+                float *output,
+                int dim);
 };
 
 
