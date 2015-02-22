@@ -218,14 +218,10 @@ int field_descriptor::transpose(
                             input[(k*this->sizes[1] + j)*this->sizes[2] + i][1];
                     }
                 // copy back transposed slice
-                for (int j = 0; j < this->sizes[2]; j++)
-                    for (int i = 0; i < this->sizes[1]; i++)
-                    {
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][0] =
-                            atmp[j*this->sizes[1] + i][0];
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i][1] =
-                            atmp[j*this->sizes[1] + i][1];
-                    }
+                std::copy(
+                        (float*)(atmp),
+                        (float*)(atmp + this->slice_size),
+                        (float*)(input + k*this->slice_size));
             }
             fftwf_free(atmp);
             break;
