@@ -148,37 +148,28 @@ int field_descriptor::transpose(
     // for 3D transposition, the input data is messed up
     fftwf_plan tplan;
     ptrdiff_t dim1;
-    switch (this->ndims)
+    if (this->ndims == 3)
     {
-        case 2:
-            dim1 = this->sizes[1];
-            break;
-        case 3:
-            // transpose the two local dimensions 1 and 2
-            dim1 = this->sizes[1]*this->sizes[2];
-            float *atmp;
-            atmp = (float*)malloc(dim1*sizeof(float));
-            for (int k = 0; k < this->subsizes[0]; k++)
-            {
-                // put transposed slice in atmp
-                for (int j = 0; j < this->sizes[1]; j++)
-                    for (int i = 0; i < this->sizes[2]; i++)
-                        atmp[i*this->sizes[1] + j] =
-                            input[(k*this->sizes[1] + j)*this->sizes[2] + i];
-                // copy back transposed slice
-                for (int j = 0; j < this->sizes[2]; j++)
-                    for (int i = 0; i < this->sizes[1]; i++)
-                        input[(k*this->sizes[2] + j)*this->sizes[1] + i] =
-                            atmp[j*this->sizes[1] + i];
-            }
-            free(atmp);
-            break;
-        default:
-            return EXIT_FAILURE;
-            break;
+        // transpose the two local dimensions 1 and 2
+        float *atmp;
+        atmp = fftwf_alloc_real(this->slice_size);
+        for (int k = 0; k < this->subsizes[0]; k++)
+        {
+            // put transposed slice in atmp
+            for (int j = 0; j < this->sizes[1]; j++)
+                for (int i = 0; i < this->sizes[2]; i++)
+                    atmp[i*this->sizes[1] + j] =
+                        input[(k*this->sizes[1] + j)*this->sizes[2] + i];
+            // copy back transposed slice
+            std::copy(
+                    atmp,
+                    atmp + this->slice_size,
+                    input + k*this->slice_size);
+        }
+        fftwf_free(atmp);
     }
     tplan = fftwf_mpi_plan_transpose(
-            this->sizes[0], dim1,
+            this->sizes[0], this->slice_size,
             input, output,
             this->comm,
             FFTW_ESTIMATE);
