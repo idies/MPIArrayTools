@@ -31,6 +31,12 @@ Morton_shuffler::Morton_shuffler(
     n[0] = (N0/8) * (N1/8) * (N2/8);
     n[1] = 8*8*8*this->d;
     this->dzcubbie = new field_descriptor(2, n, MPI_REAL4, MPI_COMM_WORLD);
+    char bla[200];
+    for (int z = 0; z < this->dzcubbie->sizes[0]; z++)
+    {
+        sprintf(bla, "z = %d, zid = %d", z, this->dzcubbie->rank[z]);
+        proc_print_err_message(bla);
+    }
 
     //set up output file descriptor
     int out_rank, out_nprocs;
@@ -65,15 +71,21 @@ int Morton_shuffler::shuffle(
     ptrdiff_t cubbie_size = 8*8*8*this->d;
     ptrdiff_t cc;
     float *rz = fftwf_alloc_real(cubbie_size);
+    char bla[200];
     for (int k = 0; k < this->drcubbie->sizes[0]; k++)
     {
-        rid = this->drcubbie->rank(k);
+        rid = this->drcubbie->rank[k];
         kk = k - this->drcubbie->starts[0];
         for (int j = 0; j < this->drcubbie->sizes[1]; j++)
         for (int i = 0; i < this->drcubbie->sizes[2]; i++)
         {
             z = regular_to_zindex(k, j, i);
-            zid = this->dzcubbie->rank(z);
+            zid = this->dzcubbie->rank[z];
+        sprintf(
+                bla,
+                "inside loops k = %d, j = %d, i = %d, z = %d, rid = %d, zid = %d",
+                k, j, i, z, rid, zid);
+        proc_print_err_message(bla);
             zz = z - this->dzcubbie->starts[0];
             if (myrank == rid || myrank == zid)
             {

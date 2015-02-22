@@ -13,7 +13,9 @@ int fftwf_copy_complex_array(
         field_descriptor *fo,
         fftwf_complex *ao)
 {
-    if ((fi->ndims != 3) || (fo->ndims != 3))
+    if (((fi->ndims != 3) ||
+         (fo->ndims != 3)) ||
+        (fi->comm != fo->comm))
         return EXIT_FAILURE;
     fftwf_complex *buffer;
     buffer = fftwf_alloc_complex(fi->slice_size);
@@ -30,8 +32,26 @@ int fftwf_copy_complex_array(
     int64_t ii0, ii1;
     int64_t oi0, oi1;
     int64_t delta1, delta0;
+    int irank, orank;
+    char bla[100];
     delta0 = (fo->sizes[0] - fi->sizes[0]);
     delta1 = (fo->sizes[1] - fi->sizes[1]);
+    //for (int64_t i = 0; i < fi->sizes[0]; i++)
+    //{
+    //    sprintf(
+    //            bla,
+    //            "i = %d, irank = %d",
+    //            i, fi->rank[i]);
+    //    proc_print_err_message(bla);
+    //}
+    //for (int64_t i = 0; i < fo->sizes[0]; i++)
+    //{
+    //    sprintf(
+    //            bla,
+    //            "i = %d, orank = %d",
+    //            i, fo->rank[i]);
+    //    proc_print_err_message(bla);
+    //}
     for (ii0=0; ii0 < fi->sizes[0]; ii0++)
     {
         if (ii0 <= fi->sizes[0]/2)
@@ -46,8 +66,15 @@ int fftwf_copy_complex_array(
             if ((oi0 < 0) || ((fo->sizes[0] - oi0) >= fo->sizes[0]/2))
                 continue;
         }
-        if ((fi->rank(ii0) == fo->rank(oi0)) &&
-            (myrank == fi->rank(ii0)))
+        irank = fi->rank[ii0];
+        orank = fo->rank[oi0];
+        //sprintf(
+        //        bla,
+        //        "inside ii0 loop, ii0 = %ld, iid = %d, oid = %d",
+        //        ii0, irank, orank);
+        //proc_print_err_message(bla);
+        if ((irank == orank) &&
+            (irank == fi->myrank))
         {
             std::copy(
                     (float*)(ai + (ii0 - fi->starts[0]    )*fi->slice_size),
@@ -56,29 +83,33 @@ int fftwf_copy_complex_array(
         }
         else
         {
-            if (myrank == fi->rank(ii0))
+            if (fi->myrank == irank)
             {
+    //            proc_print_err_message("sending");
                 MPI_Send(
                         (void*)(ai + (ii0-fi->starts[0])*fi->slice_size),
                         fi->slice_size,
                         MPI_COMPLEX8,
-                        fo->rank(oi0),
+                        orank,
                         ii0,
-                        MPI_COMM_WORLD);
+                        fi->comm);
+     //           proc_print_err_message("sent");
             }
-            if (myrank == fo->rank(oi0))
+            if (fi->myrank == orank)
             {
+      //          proc_print_err_message("receiving");
                 MPI_Recv(
                         (void*)(buffer),
                         fi->slice_size,
                         MPI_COMPLEX8,
-                        fi->rank(ii0),
+                        irank,
                         ii0,
-                        MPI_COMM_WORLD,
+                        fi->comm,
                         MPI_STATUS_IGNORE);
+      //          proc_print_err_message("received");
             }
         }
-        if (myrank == fo->rank(oi0))
+        if (fi->myrank == orank)
         {
             for (ii1 = 0; ii1 < fi->sizes[1]; ii1++)
             {
@@ -97,12 +128,14 @@ int fftwf_copy_complex_array(
                 std::copy(
                         (float*)(buffer + ii1*fi->sizes[2]),
                         (float*)(buffer + ii1*fi->sizes[2] + min_fast_dim),
-                        (float*)(ao + ((oi0 - fo->starts[0])*fo->sizes[1] + oi1)*fo->sizes[2]));
+                        (float*)(ao +
+                                 ((oi0 - fo->starts[0])*fo->sizes[1] +
+                                  oi1)*fo->sizes[2]));
             }
         }
     }
     fftw_free(buffer);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(fi->comm);
 
     return EXIT_SUCCESS;
 }
@@ -129,18 +162,15 @@ int fftwf_get_descriptors_3D(
         field_descriptor **fr,
         field_descriptor **fc)
 {
-    proc_print_err_message("fftwf_get_descriptors 00");
     int ntmp[3];
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2;
     *fr = new field_descriptor(3, ntmp, MPI_REAL4, MPI_COMM_WORLD);
-    proc_print_err_message("fftwf_get_descriptors 01");
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2/2+1;
     *fc = new field_descriptor(3, ntmp, MPI_COMPLEX8, MPI_COMM_WORLD);
-    proc_print_err_message("fftwf_get_descriptors 02");
     return EXIT_SUCCESS;
 }
 

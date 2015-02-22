@@ -18,12 +18,23 @@ field_descriptor::field_descriptor(
     this->sizes    = new int[ndims];
     this->subsizes = new int[ndims];
     this->starts   = new int[ndims];
+    ptrdiff_t *nfftw = new ptrdiff_t[ndims];
+    ptrdiff_t local_n0, local_0_start;
+    for (int i = 0; i < this->ndims; i++)
+        nfftw[i] = n[i];
+    this->local_size = fftwf_mpi_local_size_many(
+            this->ndims,
+            nfftw,
+            1,
+            FFTW_MPI_DEFAULT_BLOCK,
+            this->comm,
+            &local_n0,
+            &local_0_start);
     this->sizes[0] = n[0];
-    this->subsizes[0] = n[0]/this->nprocs;
-    this->starts[0] = this->myrank*(n[0]/this->nprocs);
+    this->subsizes[0] = local_n0;
+    this->starts[0] = local_0_start;
     this->mpi_dtype = element_type;
     this->slice_size = 1;
-    this->local_size = this->subsizes[0];
     this->full_size = this->sizes[0];
     for (int i = 1; i < this->ndims; i++)
     {
@@ -31,7 +42,6 @@ field_descriptor::field_descriptor(
         this->subsizes[i] = n[i];
         this->starts[i] = 0;
         this->slice_size *= this->subsizes[i];
-        this->local_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
     }
     MPI_Type_create_subarray(
@@ -43,6 +53,29 @@ field_descriptor::field_descriptor(
             this->mpi_dtype,
             &this->mpi_array_dtype);
     MPI_Type_commit(&this->mpi_array_dtype);
+    this->rank = new int[this->sizes[0]];
+    int *local_rank = new int[this->sizes[0]];
+    std::fill_n(local_rank, this->sizes[0], 0);
+    for (int i = 0; i < this->sizes[0]; i++)
+        if (i >= this->starts[0] && i < this->starts[0] + this->subsizes[0])
+            local_rank[i] = this->myrank;
+    MPI_Allreduce(
+            local_rank,
+            this->rank,
+            this->sizes[0],
+            MPI_INT,
+            MPI_SUM,
+            this->comm);
+    char bla[200];
+    for (int i = 0; i < this->sizes[0]; i++)
+    {
+        sprintf(
+                bla,
+                "i = %d, irank = %d",
+                i, this->rank[i]);
+        proc_print_err_message(bla);
+    }
+    delete[] local_rank;
 }
 
 field_descriptor::~field_descriptor()
@@ -50,6 +83,7 @@ field_descriptor::~field_descriptor()
     delete[] this->sizes;
     delete[] this->subsizes;
     delete[] this->starts;
+    delete[] this->rank;
     MPI_Type_free(&this->mpi_array_dtype);
 }
 
