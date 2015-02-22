@@ -67,13 +67,13 @@ int Morton_shuffler::shuffle(
     float *rz = fftwf_alloc_real(cubbie_size);
     for (int k = 0; k < this->drcubbie->sizes[0]; k++)
     {
-        rid = this->drcubbie->rank(k);
+        rid = this->drcubbie->rank[k];
         kk = k - this->drcubbie->starts[0];
         for (int j = 0; j < this->drcubbie->sizes[1]; j++)
         for (int i = 0; i < this->drcubbie->sizes[2]; i++)
         {
             z = regular_to_zindex(k, j, i);
-            zid = this->dzcubbie->rank(z);
+            zid = this->dzcubbie->rank[z];
             zz = z - this->dzcubbie->starts[0];
             if (myrank == rid || myrank == zid)
             {

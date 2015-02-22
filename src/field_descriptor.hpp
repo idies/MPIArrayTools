@@ -14,6 +14,7 @@ class field_descriptor
         int *subsizes;
         int *starts;
         int ndims;
+        int *rank;
         ptrdiff_t slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
         int myrank, nprocs;
@@ -58,11 +59,6 @@ class field_descriptor
                 float *input,
                 float *output,
                 int dim);
-
-        inline int rank(int i0)
-        {
-            return i0 / this->subsizes[0];
-        }
 };
 
 
