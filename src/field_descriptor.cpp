@@ -195,13 +195,6 @@ int field_descriptor::transpose(
     {
         case 2:
             // do a global transpose over the 2 dimensions
-            if (this->sizes[0] % this->nprocs != 0 || this->sizes[1] % this->nprocs != 0)
-            {
-                std::cerr << "you're trying to work with an array that cannot "
-                             "be evenly distributed among processes.\n"
-                          << std::endl;
-                return EXIT_FAILURE;
-            }
             if (output == NULL)
             {
                 std::cerr << "bad arguments for transpose.\n" << std::endl;
