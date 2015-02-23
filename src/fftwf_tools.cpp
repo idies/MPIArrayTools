@@ -147,28 +147,3 @@ int fftwf_get_descriptors_3D(
     return EXIT_SUCCESS;
 }
 
-/* the following is copied from
- * http://agentzlerich.blogspot.com/2010/01/using-fftw-for-in-place-matrix.html
- * */
-fftwf_plan plan_transpose(
-        int rows,
-        int cols,
-        float *in,
-        float *out,
-        const unsigned flags)
-{
-    fftwf_iodim howmany_dims[2];
-    howmany_dims[0].n  = rows;
-    howmany_dims[0].is = cols;
-    howmany_dims[0].os = 1;
-    howmany_dims[1].n  = cols;
-    howmany_dims[1].is = 1;
-    howmany_dims[1].os = rows;
-    const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
-
-    return fftwf_plan_guru_r2r(
-            /*rank*/0, /*dims*/NULL,
-            howmany_rank, howmany_dims,
-            in, out, /*kind*/NULL, flags);
-}
-

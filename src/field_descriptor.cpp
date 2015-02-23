@@ -239,6 +239,9 @@ int field_descriptor::interleave(
         float *a,
         int dim)
 {
+/* the following is copied from
+ * http://agentzlerich.blogspot.com/2010/01/using-fftw-for-in-place-matrix.html
+ * */
     fftwf_iodim howmany_dims[2];
     howmany_dims[0].n  = dim;
     howmany_dims[0].is = this->local_size;
