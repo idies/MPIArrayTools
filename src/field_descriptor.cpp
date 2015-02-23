@@ -3,8 +3,6 @@
 #include <iostream>
 #include "field_descriptor.hpp"
 
-extern int myrank, nprocs;
-
 field_descriptor::field_descriptor(
         int ndims,
         int *n,
