@@ -57,7 +57,10 @@ class field_descriptor
 
         int interleave(
                 float *input,
-                float *output,
+                int dim);
+        int interleave(
+                fftw_complex *input,
+                fftw_complex *output,
                 int dim);
 };
 
