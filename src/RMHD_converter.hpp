@@ -41,9 +41,9 @@ class RMHD_converter
         ~RMHD_converter();
 
         int convert(
-                char *ifile0,
-                char *ifile1,
-                char *ofile);
+                const char *ifile0,
+                const char *ifile1,
+                const char *ofile);
 };
 
 #endif//RMHD_CONVERTER

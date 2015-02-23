@@ -98,9 +98,9 @@ RMHD_converter::~RMHD_converter()
 }
 
 int RMHD_converter::convert(
-        char *ifile0,
-        char *ifile1,
-        char *ofile)
+        const char *ifile0,
+        const char *ifile1,
+        const char *ofile)
 {
     //read first field
     this->f0c->read(ifile0, (void*)this->c0);
