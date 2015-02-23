@@ -125,11 +125,7 @@ int RMHD_converter::convert(
     // mix components
     this->f3r->interleave(this->r3, 2);
 
-    // new array where mixed components will be placed
-    float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
-    this->s->shuffle(this->r3, rtmp, ofile);
-
-    fftwf_free(rtmp);
+    this->s->shuffle(this->r3, ofile);
     return EXIT_SUCCESS;
 }
 

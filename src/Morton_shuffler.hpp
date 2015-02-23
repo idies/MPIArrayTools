@@ -72,7 +72,6 @@ class Morton_shuffler
 
         int shuffle(
                 float *regular_data,
-                float *shuffled_data,
                 const char *base_fname);
 };
 
