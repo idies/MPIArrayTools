@@ -5,6 +5,8 @@
 
 #define FIELD_DESCRIPTOR
 
+extern int myrank, nprocs;
+
 class field_descriptor
 {
     public:
@@ -33,10 +35,10 @@ class field_descriptor
          * own mpi_array_dtype that was defined in the constructor.
          * */
         int read(
-                const char *fname,
+                char *fname,
                 void *buffer);
         int write(
-                const char *fname,
+                char *fname,
                 void *buffer);
 
         /* a function that generates the transposed descriptor.
@@ -80,7 +82,7 @@ int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
 
-void proc_print_err_message(const char *message);
+void proc_print_err_message(char *message);
 
 #endif//FIELD_DESCRIPTOR
 

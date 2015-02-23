@@ -3,8 +3,6 @@
 #include <iostream>
 #include "field_descriptor.hpp"
 
-extern int myrank, nprocs;
-
 field_descriptor::field_descriptor(
         int ndims,
         int *n,
@@ -79,7 +77,7 @@ field_descriptor::~field_descriptor()
 }
 
 int field_descriptor::read(
-        const char *fname,
+        char *fname,
         void *buffer)
 {
     MPI_Info info;
@@ -111,7 +109,7 @@ int field_descriptor::read(
 }
 
 int field_descriptor::write(
-        const char *fname,
+        char *fname,
         void *buffer)
 {
     MPI_Info info;
@@ -268,7 +266,7 @@ field_descriptor* field_descriptor::get_transpose()
     return new field_descriptor(this->ndims, n, this->mpi_dtype, this->comm);
 }
 
-void proc_print_err_message(const char *message)
+void proc_print_err_message(char *message)
 {
     for (int i = 0; i < nprocs; i++)
     {
