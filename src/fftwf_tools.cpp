@@ -167,8 +167,9 @@ fftwf_plan plan_transpose(
     howmany_dims[1].os = rows;
     const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
 
-    return fftw_plan_guru_r2r(/*rank*/0, /*dims*/NULL,
-                              howmany_rank, howmany_dims,
-                              in, out, /*kind*/NULL, flags);
+    return fftwf_plan_guru_r2r(
+            /*rank*/0, /*dims*/NULL,
+            howmany_rank, howmany_dims,
+            in, out, /*kind*/NULL, flags);
 }
 

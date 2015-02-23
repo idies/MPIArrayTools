@@ -86,11 +86,12 @@ int field_descriptor::read(
     MPI_Info_create(&info);
     MPI_File f;
 
-    f = MPI::File::Open(
+    MPI_File_open(
             this->comm,
             fname,
             MPI_MODE_RDONLY,
-            info);
+            info,
+            &f);
     MPI_File_set_view(
             f,
             0,
@@ -117,11 +118,12 @@ int field_descriptor::write(
     MPI_Info_create(&info);
     MPI_File f;
 
-    f = MPI::File::Open(
+    MPI_File_open(
             this->comm,
             fname,
             MPI_MODE_CREATE | MPI_MODE_WRONLY,
-            info);
+            info,
+            &f);
     MPI_File_set_view(
             f,
             0,
@@ -147,7 +149,6 @@ int field_descriptor::transpose(
     // IMPORTANT NOTE:
     // for 3D transposition, the input data is messed up
     fftwf_plan tplan;
-    ptrdiff_t dim1;
     if (this->ndims == 3)
     {
         // transpose the two local dimensions 1 and 2
