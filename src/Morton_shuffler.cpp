@@ -57,6 +57,7 @@ int Morton_shuffler::shuffle(
         float *a,
         const char *base_fname)
 {
+    // TODO: can this be done in-place?
     // shuffle into z order
     ptrdiff_t z, zz;
     int rid, zid;

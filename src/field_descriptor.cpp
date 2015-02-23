@@ -238,7 +238,7 @@ int field_descriptor::transpose(
 }
 
 int field_descriptor::interleave(
-        float *input,
+        float *a,
         int dim)
 {
     fftwf_iodim howmany_dims[2];
@@ -251,9 +251,14 @@ int field_descriptor::interleave(
     const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
 
     fftwf_plan tmp = fftwf_plan_guru_r2r(
-            /*rank*/0, /*dims*/NULL,
-            howmany_rank, howmany_dims,
-            input, input, /*kind*/NULL, FFTW_ESTIMATE);
+            /*rank*/0,
+            /*dims*/NULL,
+            howmany_rank,
+            howmany_dims,
+            a,
+            a,
+            /*kind*/NULL,
+            FFTW_ESTIMATE);
     fftwf_execute(tmp);
     fftwf_destroy_plan(tmp);
     return EXIT_SUCCESS;
