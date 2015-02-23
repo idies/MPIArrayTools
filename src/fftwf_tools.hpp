@@ -34,5 +34,12 @@ int fftwf_get_descriptors_3D(
         field_descriptor **fr,
         field_descriptor **fc);
 
+fftwf_plan plan_transpose(
+        int rows,
+        int cols,
+        float *in,
+        float *out,
+        const unsigned flags = FFTW_ESTIMATE);
+
 #endif//FFTWF_TOOLS
 

@@ -85,12 +85,15 @@ int field_descriptor::read(
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_File f;
+    char ffname[200];
+    sprintf(ffname, "%s", fname);
 
-    f = MPI::File::Open(
+    MPI_File_open(
             this->comm,
-            fname,
+            ffname,
             MPI_MODE_RDONLY,
-            info);
+            info,
+            &f);
     MPI_File_set_view(
             f,
             0,
@@ -116,12 +119,15 @@ int field_descriptor::write(
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_File f;
+    char ffname[200];
+    sprintf(ffname, "%s", fname);
 
-    f = MPI::File::Open(
+    MPI_File_open(
             this->comm,
-            fname,
+            ffname,
             MPI_MODE_CREATE | MPI_MODE_WRONLY,
-            info);
+            info,
+            &f);
     MPI_File_set_view(
             f,
             0,
@@ -147,7 +153,6 @@ int field_descriptor::transpose(
     // IMPORTANT NOTE:
     // for 3D transposition, the input data is messed up
     fftwf_plan tplan;
-    ptrdiff_t dim1;
     if (this->ndims == 3)
     {
         // transpose the two local dimensions 1 and 2
@@ -233,14 +238,44 @@ int field_descriptor::transpose(
 }
 
 int field_descriptor::interleave(
-        float *input,
-        float *output,
+        float *a,
+        int dim)
+{
+    fftwf_iodim howmany_dims[2];
+    howmany_dims[0].n  = dim;
+    howmany_dims[0].is = this->local_size;
+    howmany_dims[0].os = 1;
+    howmany_dims[1].n  = this->local_size;
+    howmany_dims[1].is = 1;
+    howmany_dims[1].os = dim;
+    const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
+
+    fftwf_plan tmp = fftwf_plan_guru_r2r(
+            /*rank*/0,
+            /*dims*/NULL,
+            howmany_rank,
+            howmany_dims,
+            a,
+            a,
+            /*kind*/NULL,
+            FFTW_ESTIMATE);
+    fftwf_execute(tmp);
+    fftwf_destroy_plan(tmp);
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::interleave(
+        fftw_complex *input,
+        fftw_complex *output,
         int dim)
 {
     // TODO: implement inplace interleaver
     for (int k = 0; k < this->local_size; k++)
         for (int j = 0; j < dim; j++)
-                output[k*dim + j] = input[j*this->local_size + k];
+        {
+            output[k*dim + j][0] = input[j*this->local_size + k][0];
+            output[k*dim + j][1] = input[j*this->local_size + k][1];
+        }
     return EXIT_SUCCESS;
 }
 
