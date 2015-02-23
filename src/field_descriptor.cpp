@@ -240,7 +240,22 @@ int field_descriptor::interleave(
     // TODO: implement inplace interleaver
     for (int k = 0; k < this->local_size; k++)
         for (int j = 0; j < dim; j++)
-                output[k*dim + j] = input[j*this->local_size + k];
+            output[k*dim + j] = input[j*this->local_size + k];
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::interleave(
+        fftw_complex *input,
+        fftw_complex *output,
+        int dim)
+{
+    // TODO: implement inplace interleaver
+    for (int k = 0; k < this->local_size; k++)
+        for (int j = 0; j < dim; j++)
+        {
+            output[k*dim + j][0] = input[j*this->local_size + k][0];
+            output[k*dim + j][1] = input[j*this->local_size + k][1];
+        }
     return EXIT_SUCCESS;
 }
 

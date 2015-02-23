@@ -51,9 +51,10 @@ RMHD_converter::RMHD_converter(
     //allocate fields
     this->c0  = fftwf_alloc_complex(this->f0c->local_size);
     this->c12 = fftwf_alloc_complex(this->f1c->local_size);
-    this->c3  = fftwf_alloc_complex(this->f3c->local_size);
     // 4 instead of 2, because we have 2 fields to write
     this->r3  = fftwf_alloc_real( 4*this->f3c->local_size);
+    // all FFTs are going to be inplace
+    this->c3  = (fftwf_complex*)this->r3;
 
     // allocate plans
     this->complex2real0 = fftwf_mpi_plan_dft_c2r_3d(
@@ -63,7 +64,8 @@ RMHD_converter::RMHD_converter(
             FFTW_ESTIMATE);
     this->complex2real1 = fftwf_mpi_plan_dft_c2r_3d(
             f3r->sizes[0], f3r->sizes[1], f3r->sizes[2],
-            this->c3, this->r3 + 2*this->f3c->local_size,
+            this->c3 + this->f3c->local_size,
+            this->r3 + 2*this->f3c->local_size,
             MPI_COMM_WORLD,
             FFTW_PATIENT);
 
@@ -89,7 +91,6 @@ RMHD_converter::~RMHD_converter()
 
     fftwf_free(this->c0);
     fftwf_free(this->c12);
-    fftwf_free(this->c3);
     fftwf_free(this->r3);
 
     fftwf_destroy_plan(this->complex2real0);
@@ -109,7 +110,6 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3);
     fftwf_execute(this->complex2real0);
-    proc_print_err_message("0 field read and transformed");
 
     //read second field
     this->f0c->read(ifile1, (void*)this->c0);
@@ -117,22 +117,18 @@ int RMHD_converter::convert(
     this->f1c->transpose(this->c12);
     fftwf_copy_complex_array(
             this->f2c, this->c12,
-            this->f3c, this->c3);
+            this->f3c, this->c3 + this->f3c->local_size);
     fftwf_execute(this->complex2real1);
-    proc_print_err_message("1 field read and transformed");
 
     fftwf_clip_zero_padding(this->f4r, this->r3);
-    proc_print_err_message("clipped zero padding");
 
     // new array where mixed components will be placed
     float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
 
     // mix components
     this->f3r->interleave(this->r3, rtmp, 2);
-    proc_print_err_message("interleaved array");
 
     this->s->shuffle(rtmp, this->r3, ofile);
-    proc_print_err_message("did zshuffle");
 
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
