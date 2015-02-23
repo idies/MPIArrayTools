@@ -122,13 +122,12 @@ int RMHD_converter::convert(
 
     fftwf_clip_zero_padding(this->f4r, this->r3);
 
+    // mix components
+    this->f3r->interleave(this->r3, 2);
+
     // new array where mixed components will be placed
     float *rtmp = fftwf_alloc_real( 2*this->f3r->local_size);
-
-    // mix components
-    this->f3r->interleave(this->r3, rtmp, 2);
-
-    this->s->shuffle(rtmp, this->r3, ofile);
+    this->s->shuffle(this->r3, rtmp, ofile);
 
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
