@@ -85,10 +85,12 @@ int field_descriptor::read(
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_File f;
+    char ffname[200];
+    sprintf(ffname, "%s", fname);
 
     MPI_File_open(
             this->comm,
-            fname,
+            ffname,
             MPI_MODE_RDONLY,
             info,
             &f);
@@ -117,10 +119,12 @@ int field_descriptor::write(
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_File f;
+    char ffname[200];
+    sprintf(ffname, "%s", fname);
 
     MPI_File_open(
             this->comm,
-            fname,
+            ffname,
             MPI_MODE_CREATE | MPI_MODE_WRONLY,
             info,
             &f);
