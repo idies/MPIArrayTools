@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
-#include "field_descriptor.hpp"
 #include "fftwf_tools.hpp"
 
 
