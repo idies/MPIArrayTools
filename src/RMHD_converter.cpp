@@ -57,23 +57,18 @@ RMHD_converter::RMHD_converter(
     this->c3  = (fftwf_complex*)this->r3;
 
     // allocate plans
-    this->complex2real0 = fftwf_mpi_plan_dft_c2r_3d(
-            f3r->sizes[0], f3r->sizes[1], f3r->sizes[2],
+    ptrdiff_t blabla[] = {this->f3r->sizes[0],
+                          this->f3r->sizes[1],
+                          this->f3r->sizes[2]};
+    this->complex2real = fftwf_mpi_plan_many_dft_c2r(
+            3,
+            blabla,
+            2,
+            FFTW_MPI_DEFAULT_BLOCK,
+            FFTW_MPI_DEFAULT_BLOCK,
             this->c3, this->r3,
             MPI_COMM_WORLD,
             FFTW_ESTIMATE);
-    this->complex2real1 = fftwf_mpi_plan_dft_c2r_3d(
-            f3r->sizes[0], f3r->sizes[1], f3r->sizes[2],
-            this->c3 + this->f3c->local_size,
-            this->r3 + 2*this->f3c->local_size,
-            MPI_COMM_WORLD,
-            FFTW_PATIENT);
-
-    // various descriptions for the real data
-    n[0] = N0*2;
-    n[1] = N1;
-    n[2] = N2;
-    this->f4r = new field_descriptor(3, n, MPI_REAL4, MPI_COMM_WORLD);
 
     this->s = new Morton_shuffler(N0, N1, N2, 2, nfiles);
 }
@@ -85,7 +80,6 @@ RMHD_converter::~RMHD_converter()
     delete this->f2c;
     delete this->f3c;
     delete this->f3r;
-    delete this->f4r;
 
     delete this->s;
 
@@ -93,8 +87,7 @@ RMHD_converter::~RMHD_converter()
     fftwf_free(this->c12);
     fftwf_free(this->r3);
 
-    fftwf_destroy_plan(this->complex2real0);
-    fftwf_destroy_plan(this->complex2real1);
+    fftwf_destroy_plan(this->complex2real);
 }
 
 int RMHD_converter::convert(
@@ -109,7 +102,6 @@ int RMHD_converter::convert(
     fftwf_copy_complex_array(
             this->f2c, this->c12,
             this->f3c, this->c3);
-    fftwf_execute(this->complex2real0);
 
     //read second field
     this->f0c->read(ifile1, (void*)this->c0);
@@ -118,13 +110,12 @@ int RMHD_converter::convert(
     fftwf_copy_complex_array(
             this->f2c, this->c12,
             this->f3c, this->c3 + this->f3c->local_size);
-    fftwf_execute(this->complex2real1);
 
-    fftwf_clip_zero_padding(this->f4r, this->r3);
+    this->f3c->interleave(this->c3, 2);
 
-    // mix components
-    this->f3r->interleave(this->r3, 2);
+    fftwf_execute(this->complex2real);
 
+    fftwf_clip_zero_padding(this->f3r, this->r3, 2);
     this->s->shuffle(this->r3, ofile);
     return EXIT_SUCCESS;
 }

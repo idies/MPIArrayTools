@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
-#include "field_descriptor.hpp"
 #include "fftwf_tools.hpp"
 
 
@@ -116,17 +115,20 @@ int fftwf_copy_complex_array(
 
 int fftwf_clip_zero_padding(
         field_descriptor *f,
-        float *a)
+        float *a,
+        int howmany)
 {
     if (f->ndims != 3)
         return EXIT_FAILURE;
     float *b = a;
+    ptrdiff_t copy_size = f->sizes[2] * howmany;
+    ptrdiff_t skip_size = copy_size + 2*howmany;
     for (int i0 = 0; i0 < f->subsizes[0]; i0++)
         for (int i1 = 0; i1 < f->sizes[1]; i1++)
         {
-            std::copy(a, a + f->sizes[2], b);
-            a += f->sizes[2] + 2;
-            b += f->sizes[2];
+            std::copy(a, a + copy_size, b);
+            a += skip_size;
+            b += copy_size;
         }
     return EXIT_SUCCESS;
 }
@@ -146,30 +148,5 @@ int fftwf_get_descriptors_3D(
     ntmp[2] = n2/2+1;
     *fc = new field_descriptor(3, ntmp, MPI_COMPLEX8, MPI_COMM_WORLD);
     return EXIT_SUCCESS;
-}
-
-/* the following is copied from
- * http://agentzlerich.blogspot.com/2010/01/using-fftw-for-in-place-matrix.html
- * */
-fftwf_plan plan_transpose(
-        int rows,
-        int cols,
-        float *in,
-        float *out,
-        const unsigned flags)
-{
-    fftwf_iodim howmany_dims[2];
-    howmany_dims[0].n  = rows;
-    howmany_dims[0].is = cols;
-    howmany_dims[0].os = 1;
-    howmany_dims[1].n  = cols;
-    howmany_dims[1].is = 1;
-    howmany_dims[1].os = rows;
-    const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
-
-    return fftwf_plan_guru_r2r(
-            /*rank*/0, /*dims*/NULL,
-            howmany_rank, howmany_dims,
-            in, out, /*kind*/NULL, flags);
 }
 
