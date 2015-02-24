@@ -121,12 +121,14 @@ int fftwf_clip_zero_padding(
     if (f->ndims != 3)
         return EXIT_FAILURE;
     float *b = a;
+    ptrdiff_t copy_size = f->sizes[2] * howmany;
+    ptrdiff_t skip_size = copy_size + 2*howmany;
     for (int i0 = 0; i0 < f->subsizes[0]; i0++)
         for (int i1 = 0; i1 < f->sizes[1]; i1++)
         {
-            std::copy(a, a + f->sizes[2]*howmany, b);
-            a += f->sizes[2]*howmany + 2*howmany;
-            b += f->sizes[2]*howmany;
+            std::copy(a, a + copy_size, b);
+            a += skip_size;
+            b += copy_size;
         }
     return EXIT_SUCCESS;
 }
