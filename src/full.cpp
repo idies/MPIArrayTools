@@ -1,4 +1,5 @@
-#include "RMHD_converter.hpp"
+#include "p3DFFT_to_iR.hpp"
+#include "Morton_shuffler.hpp"
 #include <iostream>
 
 int myrank, nprocs;
@@ -24,13 +25,33 @@ int main(int argc, char *argv[])
         MPI_Finalize();
         return EXIT_SUCCESS;
     }
-    RMHD_converter *bla = new RMHD_converter(
+    p3DFFT_to_iR *r = new p3DFFT_to_iR(
             (n/2+1), n, n,
             N, N, N,
-            nfiles);
-    bla->convert("Kdata0", "Kdata1", "Rdata");
+            2);
 
-    delete bla;
+    // initialize file names
+    char **ifile;
+    ifile = (char**)malloc(2*sizeof(char*));
+    for (int i; i<2; i++)
+    {
+        ifile[i] = (char*)malloc(100*sizeof(char));
+        sprintf(ifile[i], "Kdata%d", i);
+    }
+
+    //read
+    r->read(ifile);
+
+    //free file names
+    for (int i; i<2; i++)
+        free(ifile[i]);
+    free(ifile);
+    Morton_shuffler *s = new Morton_shuffler(
+            N, N, N, 2, nfiles);
+    s->shuffle(r->r3, "Rdata");
+
+    delete s;
+    delete r;
 
     // clean up
     fftwf_mpi_cleanup();

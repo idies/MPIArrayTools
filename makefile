@@ -28,6 +28,7 @@ base_files := \
 	field_descriptor \
 	fftwf_tools \
 	Morton_shuffler \
+	p3DFFT_to_iR \
 	RMHD_converter
 
 #headers := $(patsubst %, ./src/%.hpp, ${base_files})
