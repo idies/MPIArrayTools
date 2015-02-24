@@ -9,14 +9,8 @@ RMHD_converter::RMHD_converter(
         int N0, int N1, int N2,
         int nfiles)
 {
-    if (nprocs % nfiles != 0)
-    {
-        std::cerr <<
-            "Number of output files incompatible with number of processes.\n"
-            "Aborting.\n" << std::endl;
-        exit(EXIT_FAILURE);
-    }
     int n[7];
+    proc_print_err_message("entering constructor of RMHD_converter");
 
     // first 3 arguments are dimensions for input array
     // i.e. actual dimensions for the Fourier representation.
@@ -71,6 +65,7 @@ RMHD_converter::RMHD_converter(
             FFTW_ESTIMATE);
 
     this->s = new Morton_shuffler(N0, N1, N2, 2, nfiles);
+    proc_print_err_message("exiting constructor of RMHD_converter");
 }
 
 RMHD_converter::~RMHD_converter()
@@ -96,9 +91,17 @@ int RMHD_converter::convert(
         const char *ofile)
 {
     //read first field
+    proc_print_err_message("RMHD_converter::convert "
+                           "this->f0c->read(ifile0, (void*)this->c0);");
     this->f0c->read(ifile0, (void*)this->c0);
+    proc_print_err_message("RMHD_converter::convert "
+                           "this->f0c->transpose(this->c0, this->c12);");
     this->f0c->transpose(this->c0, this->c12);
+    proc_print_err_message("RMHD_converter::convert "
+                           "this->f1c->transpose(this->c12);");
     this->f1c->transpose(this->c12);
+    proc_print_err_message("RMHD_converter::convert "
+                           "fftwf_copy_complex_array(");
     fftwf_copy_complex_array(
             this->f2c, this->c12,
             this->f3c, this->c3);
@@ -111,12 +114,21 @@ int RMHD_converter::convert(
             this->f2c, this->c12,
             this->f3c, this->c3 + this->f3c->local_size);
 
+    proc_print_err_message("RMHD_converter::convert "
+                           "this->f3c->interleave(this->c3, 2);");
     this->f3c->interleave(this->c3, 2);
 
+    proc_print_err_message("RMHD_converter::convert "
+                           "fftwf_execute(this->complex2real);");
     fftwf_execute(this->complex2real);
 
+    proc_print_err_message("RMHD_converter::convert "
+                           "fftwf_clip_zero_padding(this->f3r, this->r3, 2);");
     fftwf_clip_zero_padding(this->f3r, this->r3, 2);
+    proc_print_err_message("RMHD_converter::convert "
+                           "this->s->shuffle(this->r3, ofile);");
     this->s->shuffle(this->r3, ofile);
+    proc_print_err_message("RMHD_converter::convert return");
     return EXIT_SUCCESS;
 }
 

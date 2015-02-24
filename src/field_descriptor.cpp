@@ -302,10 +302,12 @@ field_descriptor* field_descriptor::get_transpose()
 
 void proc_print_err_message(const char *message)
 {
+#ifndef NDEBUG
     for (int i = 0; i < nprocs; i++)
     {
         if (myrank == i)
             std::cerr << i << " " << message << std::endl;
         MPI_Barrier(MPI_COMM_WORLD);
     }
+#endif
 }
