@@ -89,34 +89,34 @@ int p3DFFT_to_iR::read(
     //read fields
     for (int i = 0; i < this->howmany; i++)
     {
-        proc_print_err_message("p3DFFT_to_iR::convert "
+        proc_print_err_message("p3DFFT_to_iR::read "
                                "this->f0c->read(ifile0, (void*)this->c0);");
         this->f0c->read(ifile[i], (void*)this->c0);
-        proc_print_err_message("p3DFFT_to_iR::convert "
+        proc_print_err_message("p3DFFT_to_iR::read "
                                "this->f0c->transpose(this->c0, this->c12);");
         this->f0c->transpose(this->c0, this->c12);
-        proc_print_err_message("p3DFFT_to_iR::convert "
+        proc_print_err_message("p3DFFT_to_iR::read "
                                "this->f1c->transpose(this->c12);");
         this->f1c->transpose(this->c12);
-        proc_print_err_message("p3DFFT_to_iR::convert "
+        proc_print_err_message("p3DFFT_to_iR::read "
                                "fftwf_copy_complex_array(");
         fftwf_copy_complex_array(
                 this->f2c, this->c12,
                 this->f3c, this->c3 + i*this->f3c->local_size);
     }
 
-    proc_print_err_message("p3DFFT_to_iR::convert "
+    proc_print_err_message("p3DFFT_to_iR::read "
                            "this->f3c->interleave(this->c3, 2);");
     this->f3c->interleave(this->c3, this->howmany);
 
-    proc_print_err_message("p3DFFT_to_iR::convert "
+    proc_print_err_message("p3DFFT_to_iR::read "
                            "fftwf_execute(this->complex2real);");
     fftwf_execute(this->complex2real);
 
-    proc_print_err_message("p3DFFT_to_iR::convert "
+    proc_print_err_message("p3DFFT_to_iR::read "
                            "fftwf_clip_zero_padding(this->f3r, this->r3, 2);");
     fftwf_clip_zero_padding(this->f3r, this->r3, this->howmany);
-    proc_print_err_message("p3DFFT_to_iR::convert return");
+    proc_print_err_message("p3DFFT_to_iR::read return");
     return EXIT_SUCCESS;
 }
 
