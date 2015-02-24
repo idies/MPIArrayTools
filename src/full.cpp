@@ -2,7 +2,6 @@
 #include <iostream>
 
 int myrank, nprocs;
-const int iter0 = 138000;
 
 int main(int argc, char *argv[])
 {
@@ -10,26 +9,27 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    char iname0[100], iname1[100], oname[100];
+    int n, N, nfiles;
+    if (argc == 4)
+    {
+        n = atoi(argv[1]);
+        N = atoi(argv[2]);
+        nfiles = atoi(argv[3]);
+    }
+    else
+    {
+        std::cerr <<
+            "not enough (or too many) parameters.\naborting." <<
+            std::endl;
+        MPI_Finalize();
+        return EXIT_SUCCESS;
+    }
     RMHD_converter *bla = new RMHD_converter(
- //           atoi(argv[1]), atoi(argv[2]), atoi(argv[3]),
- //           atoi(argv[4]), atoi(argv[5]), atoi(argv[6]),
- //           2);
-            (1364/2+1), 1364, 1364,
-            2048, 2048, 2048,
-            64);
- //   bla->convert("Kdata0", "Kdata1", "Rdata");
-    proc_print_err_message("aloha");
+            (n/2+1), n, n,
+            N, N, N,
+            nfiles);
+    bla->convert("Kdata0", "Kdata1", "Rdata");
 
-    int iteration = 138000;
-    sprintf(iname0, "K%.6dQNP002", iteration - iter0);
-    sprintf(iname1, "K%.6dQNP003", iteration - iter0);
-    sprintf(oname, "u_t%.3x", iteration - iter0);
-    bla->convert(iname0, iname1, oname);
-    sprintf(iname0, "K%.6dQNP005", iteration - iter0);
-    sprintf(iname1, "K%.6dQNP006", iteration - iter0);
-    sprintf(oname, "b_t%.3x", iteration - iter0);
-    bla->convert(iname0, iname1, oname);
     delete bla;
 
     // clean up
