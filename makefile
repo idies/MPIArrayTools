@@ -2,7 +2,9 @@ MPICXX  = mpicxx
 LINKER  = mpicxx
 DEFINES =
 CFLAGS  = -Wall \
-		  -O2
+		  -O2 \
+		  #-pg \
+		  #-finstrument-functions
 
 LIBS = -lfftw3_mpi \
 	   -lfftw3 \
