@@ -31,9 +31,8 @@ int main(int argc, char *argv[])
             2);
 
     // initialize file names
-    char **ifile;
-    ifile = (char**)malloc(2*sizeof(char*));
-    for (int i; i<2; i++)
+    char* ifile[2];
+    for (int i=0; i<2; i++)
     {
         ifile[i] = (char*)malloc(100*sizeof(char));
         sprintf(ifile[i], "Kdata%d", i);
@@ -41,11 +40,9 @@ int main(int argc, char *argv[])
 
     //read
     r->read(ifile);
-
-    //free file names
-    for (int i; i<2; i++)
+    for (int i = 0; i<2; i++)
         free(ifile[i]);
-    free(ifile);
+
     Morton_shuffler *s = new Morton_shuffler(
             N, N, N, 2, nfiles);
     s->shuffle(r->r3, "Rdata");
