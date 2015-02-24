@@ -115,7 +115,8 @@ int fftwf_copy_complex_array(
 
 int fftwf_clip_zero_padding(
         field_descriptor *f,
-        float *a)
+        float *a,
+        int howmany)
 {
     if (f->ndims != 3)
         return EXIT_FAILURE;
@@ -123,9 +124,9 @@ int fftwf_clip_zero_padding(
     for (int i0 = 0; i0 < f->subsizes[0]; i0++)
         for (int i1 = 0; i1 < f->sizes[1]; i1++)
         {
-            std::copy(a, a + f->sizes[2], b);
-            a += f->sizes[2] + 2;
-            b += f->sizes[2];
+            std::copy(a, a + f->sizes[2]*howmany, b);
+            a += f->sizes[2]*howmany + 2*howmany;
+            b += f->sizes[2]*howmany;
         }
     return EXIT_SUCCESS;
 }

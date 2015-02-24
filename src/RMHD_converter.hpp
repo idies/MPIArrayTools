@@ -20,9 +20,6 @@ class RMHD_converter
         field_descriptor *f2c; // descriptor for 3D fully transposed input
         field_descriptor *f3c, *f3r; // descriptors for FFT
 
-        // descriptor for N0*2 x N1 x N2 real space array
-        field_descriptor *f4r;
-
         Morton_shuffler *s;
 
         fftwf_complex *c0 ; // array to store 2D input
@@ -30,8 +27,7 @@ class RMHD_converter
         fftwf_complex *c3 ; // array to store resized Fourier data
         float *r3         ; // array to store real space data
 
-        fftwf_plan complex2real0;
-        fftwf_plan complex2real1;
+        fftwf_plan complex2real;
 
         /* methods */
         RMHD_converter(

@@ -20,7 +20,8 @@ int fftwf_copy_complex_array(
 
 int fftwf_clip_zero_padding(
         field_descriptor *f,
-        float *a);
+        float *a,
+        int howmany=1);
 
 /* function to get pair of descriptors for real and Fourier space
  * arrays used with fftw.
