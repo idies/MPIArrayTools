@@ -32,7 +32,15 @@ int main(int argc, char *argv[])
 
     const int n = 1364;
     const int N = 2048;
-    int nfiles = nprocs % 64;
+    int nfiles;
+    if (nprocs % 64 == 0)
+    {
+        nfiles = 64;
+    }
+    else
+    {
+        nfiles = nprocs;
+    }
     int iteration;
     if (argc == 2)
     {
