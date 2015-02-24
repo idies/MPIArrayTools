@@ -1,6 +1,6 @@
 MPICXX  = mpicxx
 LINKER  = mpicxx
-DEFINES =
+DEFINES = -DNDEBUG
 CFLAGS  = -Wall \
 		  -O2 \
 		  #-pg \

@@ -15,6 +15,15 @@ Morton_shuffler::Morton_shuffler(
             "Aborting.\n" << std::endl;
         exit(EXIT_FAILURE);
     }
+    if ((N0/8 % nprocs != 0) &&
+        (N1/8 % nprocs != 0) &&
+        (N2/8 % nprocs != 0))
+    {
+        std::cerr <<
+            "Number of cpus incompatible with z-index representation.\n"
+            "Aborting.\n" << std::endl;
+        exit(EXIT_FAILURE);
+    }
     int n[4];
 
     // various descriptions for the real data
