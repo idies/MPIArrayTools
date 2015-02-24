@@ -3,8 +3,6 @@
 #include <iostream>
 #include "field_descriptor.hpp"
 
-extern int myrank, nprocs;
-
 field_descriptor::field_descriptor(
         int ndims,
         int *n,
@@ -241,6 +239,9 @@ int field_descriptor::interleave(
         float *a,
         int dim)
 {
+/* the following is copied from
+ * http://agentzlerich.blogspot.com/2010/01/using-fftw-for-in-place-matrix.html
+ * */
     fftwf_iodim howmany_dims[2];
     howmany_dims[0].n  = dim;
     howmany_dims[0].is = this->local_size;
@@ -265,17 +266,29 @@ int field_descriptor::interleave(
 }
 
 int field_descriptor::interleave(
-        fftw_complex *input,
-        fftw_complex *output,
+        fftwf_complex *a,
         int dim)
 {
-    // TODO: implement inplace interleaver
-    for (int k = 0; k < this->local_size; k++)
-        for (int j = 0; j < dim; j++)
-        {
-            output[k*dim + j][0] = input[j*this->local_size + k][0];
-            output[k*dim + j][1] = input[j*this->local_size + k][1];
-        }
+    fftwf_iodim howmany_dims[2];
+    howmany_dims[0].n  = dim;
+    howmany_dims[0].is = this->local_size;
+    howmany_dims[0].os = 1;
+    howmany_dims[1].n  = this->local_size;
+    howmany_dims[1].is = 1;
+    howmany_dims[1].os = dim;
+    const int howmany_rank = sizeof(howmany_dims)/sizeof(howmany_dims[0]);
+
+    fftwf_plan tmp = fftwf_plan_guru_dft(
+            /*rank*/0,
+            /*dims*/NULL,
+            howmany_rank,
+            howmany_dims,
+            a,
+            a,
+            +1,
+            FFTW_ESTIMATE);
+    fftwf_execute(tmp);
+    fftwf_destroy_plan(tmp);
     return EXIT_SUCCESS;
 }
 

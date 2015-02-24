@@ -1,5 +1,6 @@
 #include <mpi.h>
 #include <fftw3-mpi.h>
+#include "field_descriptor.hpp"
 
 #ifndef FFTWF_TOOLS
 
@@ -19,7 +20,8 @@ int fftwf_copy_complex_array(
 
 int fftwf_clip_zero_padding(
         field_descriptor *f,
-        float *a);
+        float *a,
+        int howmany=1);
 
 /* function to get pair of descriptors for real and Fourier space
  * arrays used with fftw.
@@ -33,13 +35,6 @@ int fftwf_get_descriptors_3D(
         int n0, int n1, int n2,
         field_descriptor **fr,
         field_descriptor **fc);
-
-fftwf_plan plan_transpose(
-        int rows,
-        int cols,
-        float *in,
-        float *out,
-        const unsigned flags = FFTW_ESTIMATE);
 
 #endif//FFTWF_TOOLS
 

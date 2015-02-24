@@ -5,6 +5,8 @@
 
 #define FIELD_DESCRIPTOR
 
+extern int myrank, nprocs;
+
 class field_descriptor
 {
     public:
@@ -59,8 +61,7 @@ class field_descriptor
                 float *input,
                 int dim);
         int interleave(
-                fftw_complex *input,
-                fftw_complex *output,
+                fftwf_complex *input,
                 int dim);
 };
 
