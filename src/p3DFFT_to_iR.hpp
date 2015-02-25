@@ -29,6 +29,7 @@ class p3DFFT_to_iR
         fftwf_complex *c12; // array to store transposed input
         fftwf_complex *c3 ; // array to store resized Fourier data
         float *r3         ; // array to store real space data
+        bool fields_allocated;
 
         fftwf_plan complex2real;
 
@@ -36,7 +37,8 @@ class p3DFFT_to_iR
         p3DFFT_to_iR(
                 int n0, int n1, int n2,
                 int N0, int N1, int N2,
-                int howmany);
+                int howmany,
+                bool allocate_fields = true);
         ~p3DFFT_to_iR();
 
         int read(
