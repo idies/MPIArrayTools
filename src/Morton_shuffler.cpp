@@ -8,7 +8,8 @@ Morton_shuffler::Morton_shuffler(
         int nfiles)
 {
     this->d = d;
-    if (nprocs % nfiles != 0)
+    if ((nprocs % nfiles != 0) &&
+        (nfiles % nprocs != 0))
     {
         std::cerr <<
             "Number of output files incompatible with number of processes.\n"
@@ -44,6 +45,13 @@ Morton_shuffler::Morton_shuffler(
     //set up output file descriptor
     int out_rank, out_nprocs;
     out_nprocs = nprocs/nfiles;
+    if (out_nprocs == 0)
+    {
+        out_nprocs = 1;
+        this->files_per_proc = nfiles / nprocs;
+    }
+    else
+        this->files_per_proc = 1;
     this->out_group = myrank / out_nprocs;
     out_rank = myrank % out_nprocs;
     n[0] = ((N0/8) * (N1/8) * (N2/8)) / nfiles;
@@ -128,11 +136,16 @@ int Morton_shuffler::shuffle(
     fftwf_free(rz);
 
     char temp_char[200];
-    sprintf(temp_char,
-            "%s_z%.7x",
-            base_fname,
-            this->out_group*this->doutput->sizes[0]);
-    this->doutput->write(temp_char, rtmp);
+    for (int fcounter = 0; fcounter < this->files_per_proc; fcounter++)
+    {
+        sprintf(temp_char,
+                "%s_z%.7x",
+                base_fname,
+                (this->files_per_proc*this->out_group + fcounter)*this->doutput->sizes[0]);
+        this->doutput->write(
+                temp_char,
+                rtmp + fcounter*this->doutput->local_size);
+    }
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
 }

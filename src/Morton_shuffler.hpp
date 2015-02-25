@@ -61,7 +61,7 @@ class Morton_shuffler
 
         // communicator to use for output
         MPI_Comm out_communicator;
-        int out_group;
+        int out_group, files_per_proc;
 
         /* methods */
         Morton_shuffler(
