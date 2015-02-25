@@ -19,8 +19,8 @@ class field_descriptor
         int *rank;
         ptrdiff_t slice_size, local_size, full_size;
         MPI_Datatype mpi_array_dtype, mpi_dtype;
-        int myrank, nprocs;
-        MPI_Comm comm;
+        int myrank, nprocs, io_myrank, io_nprocs;
+        MPI_Comm comm, io_comm;
 
 
         /* methods */
@@ -79,8 +79,6 @@ int fftwf_copy_complex_array(
 int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
-
-void proc_print_err_message(const char *message);
 
 #endif//FIELD_DESCRIPTOR
 

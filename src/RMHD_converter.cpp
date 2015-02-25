@@ -30,12 +30,21 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    int n, N, nfiles;
-    if (argc == 4)
+    const int n = 1364;
+    const int N = 2048;
+    int nfiles;
+    if (nprocs % 64 == 0)
     {
-        n = atoi(argv[1]);
-        N = atoi(argv[2]);
-        nfiles = atoi(argv[3]);
+        nfiles = 64;
+    }
+    else
+    {
+        nfiles = nprocs;
+    }
+    int iteration;
+    if (argc == 2)
+    {
+        iteration = atoi(argv[1]);
     }
     else
     {
@@ -58,18 +67,18 @@ int main(int argc, char *argv[])
         ifile[i] = (char*)malloc(sizeof(char)*100);
 
     // velocity
-    get_RMHD_names(138000, true)
+    get_RMHD_names(iteration, true, ifile);
     r->read(ifile);
     sprintf(ifile[0], "u_t%.3x", iteration - iter0);
     s->shuffle(r->r3, ifile[0]);
     // magnetic
-    get_RMHD_names(138000, false)
+    get_RMHD_names(iteration, false, ifile);
     r->read(ifile);
     sprintf(ifile[0], "b_t%.3x", iteration - iter0);
     s->shuffle(r->r3, ifile[0]);
 
     //free file names
-    for (int i; i<2; i++)
+    for (int i=0; i<2; i++)
         free(ifile[i]);
 
     delete s;

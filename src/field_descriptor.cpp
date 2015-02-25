@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
+#include "base.hpp"
 #include "field_descriptor.hpp"
 
 field_descriptor::field_descriptor(
@@ -9,6 +10,7 @@ field_descriptor::field_descriptor(
         MPI_Datatype element_type,
         MPI_Comm COMM_TO_USE)
 {
+    DEBUG_MSG("entered field_descriptor::field_descriptor\n");
     this->comm = COMM_TO_USE;
     MPI_Comm_rank(this->comm, &this->myrank);
     MPI_Comm_size(this->comm, &this->nprocs);
@@ -42,15 +44,73 @@ field_descriptor::field_descriptor(
         this->slice_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
     }
-    MPI_Type_create_subarray(
-            ndims,
-            this->sizes,
-            this->subsizes,
-            this->starts,
-            MPI_ORDER_C,
-            this->mpi_dtype,
-            &this->mpi_array_dtype);
-    MPI_Type_commit(&this->mpi_array_dtype);
+    DEBUG_MSG_WAIT(
+            this->comm,
+            "inside field_descriptor constructor, about to call "
+            "MPI_Type_create_subarray\n"
+            "%d %d %d\n",
+            this->sizes[0],
+            this->subsizes[0],
+            this->starts[0]);
+    int local_zero_array[this->nprocs], zero_array[this->nprocs];
+    for (int i=0; i<this->nprocs; i++)
+        local_zero_array[i] = 0;
+    local_zero_array[this->myrank] = (this->subsizes[0] == 0) ? 1 : 0;
+    MPI_Allreduce(
+            local_zero_array,
+            zero_array,
+            this->nprocs,
+            MPI_INT,
+            MPI_SUM,
+            this->comm);
+    int no_of_excluded_ranks = 0;
+    for (int i = 0; i<this->nprocs; i++)
+        no_of_excluded_ranks += zero_array[i];
+    if (no_of_excluded_ranks == 0)
+    {
+        this->io_comm = this->comm;
+        this->io_nprocs = this->nprocs;
+        this->io_myrank = this->myrank;
+    }
+    else
+    {
+        int excluded_rank[no_of_excluded_ranks];
+        for (int i=0, j=0; i<this->nprocs; i++)
+            if (zero_array[i])
+            {
+                excluded_rank[j] = i;
+                j++;
+            }
+        MPI_Group tgroup0, tgroup;
+        MPI_Comm_group(this->comm, &tgroup0);
+        MPI_Group_excl(tgroup0, no_of_excluded_ranks, excluded_rank, &tgroup);
+        MPI_Comm_create(this->comm, tgroup, &this->io_comm);
+        MPI_Group_free(&tgroup0);
+        MPI_Group_free(&tgroup);
+        if (this->subsizes[0] > 0)
+        {
+            MPI_Comm_rank(this->io_comm, &this->io_myrank);
+            MPI_Comm_size(this->io_comm, &this->io_nprocs);
+        }
+        else
+        {
+            this->io_myrank = MPI_PROC_NULL;
+            this->io_nprocs = -1;
+        }
+    }
+    if (this->subsizes[0] > 0)
+    {
+        DEBUG_MSG("creating subarray\n");
+        MPI_Type_create_subarray(
+                ndims,
+                this->sizes,
+                this->subsizes,
+                this->starts,
+                MPI_ORDER_C,
+                this->mpi_dtype,
+                &this->mpi_array_dtype);
+        MPI_Type_commit(&this->mpi_array_dtype);
+    }
     this->rank = new int[this->sizes[0]];
     int *local_rank = new int[this->sizes[0]];
     std::fill_n(local_rank, this->sizes[0], 0);
@@ -69,44 +129,65 @@ field_descriptor::field_descriptor(
 
 field_descriptor::~field_descriptor()
 {
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            this->io_comm == MPI_COMM_NULL ? "null\n" : "not null\n");
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            "subsizes[0] = %d \n", this->subsizes[0]);
+    if (this->subsizes[0] > 0)
+    {
+        DEBUG_MSG_WAIT(
+                this->io_comm,
+                "deallocating mpi_array_dtype\n");
+        MPI_Type_free(&this->mpi_array_dtype);
+    }
+    if (this->nprocs != this->io_nprocs && this->io_myrank != MPI_PROC_NULL)
+    {
+        DEBUG_MSG_WAIT(
+                this->io_comm,
+                "freeing io_comm\n");
+        MPI_Comm_free(&this->io_comm);
+    }
     delete[] this->sizes;
     delete[] this->subsizes;
     delete[] this->starts;
     delete[] this->rank;
-    MPI_Type_free(&this->mpi_array_dtype);
 }
 
 int field_descriptor::read(
         const char *fname,
         void *buffer)
 {
-    MPI_Info info;
-    MPI_Info_create(&info);
-    MPI_File f;
-    char ffname[200];
-    sprintf(ffname, "%s", fname);
+    if (this->subsizes[0] > 0)
+    {
+        MPI_Info info;
+        MPI_Info_create(&info);
+        MPI_File f;
+        char ffname[200];
+        sprintf(ffname, "%s", fname);
 
-    MPI_File_open(
-            this->comm,
-            ffname,
-            MPI_MODE_RDONLY,
-            info,
-            &f);
-    MPI_File_set_view(
-            f,
-            0,
-            this->mpi_dtype,
-            this->mpi_array_dtype,
-            "native", //this needs to be made more general
-            info);
-    MPI_File_read_all(
-            f,
-            buffer,
-            this->local_size,
-            this->mpi_dtype,
-            MPI_STATUS_IGNORE);
-    MPI_File_close(&f);
-
+        MPI_File_open(
+                this->io_comm,
+                ffname,
+                MPI_MODE_RDONLY,
+                info,
+                &f);
+        MPI_File_set_view(
+                f,
+                0,
+                this->mpi_dtype,
+                this->mpi_array_dtype,
+                "native", //this needs to be made more general
+                info);
+        MPI_File_read_all(
+                f,
+                buffer,
+                this->local_size,
+                this->mpi_dtype,
+                MPI_STATUS_IGNORE);
+        MPI_File_close(&f);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -114,32 +195,35 @@ int field_descriptor::write(
         const char *fname,
         void *buffer)
 {
-    MPI_Info info;
-    MPI_Info_create(&info);
-    MPI_File f;
-    char ffname[200];
-    sprintf(ffname, "%s", fname);
+    if (this->subsizes[0] > 0)
+    {
+        MPI_Info info;
+        MPI_Info_create(&info);
+        MPI_File f;
+        char ffname[200];
+        sprintf(ffname, "%s", fname);
 
-    MPI_File_open(
-            this->comm,
-            ffname,
-            MPI_MODE_CREATE | MPI_MODE_WRONLY,
-            info,
-            &f);
-    MPI_File_set_view(
-            f,
-            0,
-            this->mpi_dtype,
-            this->mpi_array_dtype,
-            "native", //this needs to be made more general
-            info);
-    MPI_File_write_all(
-            f,
-            buffer,
-            this->local_size,
-            this->mpi_dtype,
-            MPI_STATUS_IGNORE);
-    MPI_File_close(&f);
+        MPI_File_open(
+                this->io_comm,
+                ffname,
+                MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                info,
+                &f);
+        MPI_File_set_view(
+                f,
+                0,
+                this->mpi_dtype,
+                this->mpi_array_dtype,
+                "native", //this needs to be made more general
+                info);
+        MPI_File_write_all(
+                f,
+                buffer,
+                this->local_size,
+                this->mpi_dtype,
+                MPI_STATUS_IGNORE);
+        MPI_File_close(&f);
+    }
 
     return EXIT_SUCCESS;
 }
@@ -300,14 +384,3 @@ field_descriptor* field_descriptor::get_transpose()
     return new field_descriptor(this->ndims, n, this->mpi_dtype, this->comm);
 }
 
-void proc_print_err_message(const char *message)
-{
-#ifndef NDEBUG
-    for (int i = 0; i < nprocs; i++)
-    {
-        if (myrank == i)
-            std::cerr << i << " " << message << std::endl;
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-#endif
-}
