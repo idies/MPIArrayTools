@@ -11,7 +11,6 @@ field_descriptor::field_descriptor(
         MPI_Comm COMM_TO_USE)
 {
     DEBUG_MSG("entered field_descriptor::field_descriptor\n");
-    //CHECK_POINT();
     this->comm = COMM_TO_USE;
     MPI_Comm_rank(this->comm, &this->myrank);
     MPI_Comm_size(this->comm, &this->nprocs);
@@ -45,14 +44,14 @@ field_descriptor::field_descriptor(
         this->slice_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
     }
-    DEBUG_MSG(
+    DEBUG_MSG_WAIT(
+            this->comm,
             "inside field_descriptor constructor, about to call "
             "MPI_Type_create_subarray\n"
             "%d %d %d\n",
             this->sizes[0],
             this->subsizes[0],
             this->starts[0]);
-    DEBUG_WAIT_ALL();
     int local_zero_array[this->nprocs], zero_array[this->nprocs];
     for (int i=0; i<this->nprocs; i++)
         local_zero_array[i] = 0;
@@ -130,27 +129,30 @@ field_descriptor::field_descriptor(
 
 field_descriptor::~field_descriptor()
 {
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            this->io_comm == MPI_COMM_NULL ? "null\n" : "not null\n");
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            "subsizes[0] = %d \n", this->subsizes[0]);
+    if (this->subsizes[0] > 0)
+    {
+        DEBUG_MSG_WAIT(
+                this->io_comm,
+                "deallocating mpi_array_dtype\n");
+        MPI_Type_free(&this->mpi_array_dtype);
+    }
+    if (this->nprocs != this->io_nprocs && this->io_myrank != MPI_PROC_NULL)
+    {
+        DEBUG_MSG_WAIT(
+                this->io_comm,
+                "freeing io_comm\n");
+        MPI_Comm_free(&this->io_comm);
+    }
     delete[] this->sizes;
     delete[] this->subsizes;
     delete[] this->starts;
     delete[] this->rank;
-    DEBUG_MSG(this->io_comm == MPI_COMM_NULL ? "null\n" : "not null\n");
-    DEBUG_WAIT_ALL();
-    DEBUG_MSG("subsizes[0] = %d \n", this->subsizes[0]);
-    DEBUG_WAIT_ALL();
-    if (this->subsizes[0] > 0)
-    {
-        DEBUG_MSG("deallocating mpi_array_dtype\n");
-        DEBUG_WAIT(this->io_comm);
-        MPI_Type_free(&this->mpi_array_dtype);
-    }
-    DEBUG_WAIT_ALL();
-    if (this->nprocs != this->io_nprocs && this->io_myrank != MPI_PROC_NULL)
-    {
-        DEBUG_MSG("freeing io_comm\n");
-        DEBUG_WAIT(this->io_comm);
-        MPI_Comm_free(&this->io_comm);
-    }
 }
 
 int field_descriptor::read(
