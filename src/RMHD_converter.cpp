@@ -32,24 +32,11 @@ int main(int argc, char *argv[])
 
     const int n = 1364;
     const int N = 2048;
-    int nfiles;
-    if (nprocs % 64 == 0)
-    {
-        nfiles = 64;
-    }
-    else
-    {
-        nfiles = nprocs;
-    }
     int iteration;
-    if (argc == 2)
-    {
-        iteration = atoi(argv[1]);
-    }
-    else
+    if (argc < 2)
     {
         std::cerr <<
-            "not enough (or too many) parameters.\naborting." <<
+            "not enough parameters.\naborting." <<
             std::endl;
         MPI_Finalize();
         return EXIT_SUCCESS;
@@ -59,23 +46,27 @@ int main(int argc, char *argv[])
             N, N, N,
             2);
     Morton_shuffler *s = new Morton_shuffler(
-            N, N, N, 2, nfiles);
+            N, N, N, 2, 64);
 
     // initialize file names
     char *ifile[2];
     for (int i=0; i<2; i++)
         ifile[i] = (char*)malloc(sizeof(char)*100);
 
-    // velocity
-    get_RMHD_names(iteration, true, ifile);
-    r->read(ifile);
-    sprintf(ifile[0], "u_t%.3x", iteration - iter0);
-    s->shuffle(r->r3, ifile[0]);
-    // magnetic
-    get_RMHD_names(iteration, false, ifile);
-    r->read(ifile);
-    sprintf(ifile[0], "b_t%.3x", iteration - iter0);
-    s->shuffle(r->r3, ifile[0]);
+    for (int i=1; i<argc; i++)
+    {
+        iteration = atoi(argv[i]);
+        // velocity
+        get_RMHD_names(iteration, true, ifile);
+        r->read(ifile);
+        sprintf(ifile[0], "RMHD_u_t%.3x", iteration - iter0);
+        s->shuffle(r->r3, ifile[0]);
+        // magnetic
+        get_RMHD_names(iteration, false, ifile);
+        r->read(ifile);
+        sprintf(ifile[0], "RMHD_b_t%.3x", iteration - iter0);
+        s->shuffle(r->r3, ifile[0]);
+    }
 
     //free file names
     for (int i=0; i<2; i++)
