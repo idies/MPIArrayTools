@@ -29,11 +29,20 @@ inline void DEBUG_MSG(const char * format, ...)
     std::cerr << debug_message_buffer;
 }
 
+inline void DEBUG_WAIT(MPI_Comm communicator)
+{
+    MPI_Barrier(communicator);
+}
+
+#define DEBUG_WAIT_ALL() MPI_Barrier(MPI_COMM_WORLD)
+
 #define CHECK_POINT() DEBUG_MSG("%s %s", __FILE__, __LINE__)
 
 #else
 
-    #define DEBUG_MSG(x)
+#define DEBUG_MSG(...)
+#define DEBUG_WAIT_ALL()
+#define DEBUG_WAIT(...)
 
 #define CHECK_POINT()
 

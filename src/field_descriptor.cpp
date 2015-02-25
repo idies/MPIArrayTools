@@ -52,6 +52,7 @@ field_descriptor::field_descriptor(
             this->sizes[0],
             this->subsizes[0],
             this->starts[0]);
+    DEBUG_WAIT_ALL();
     int local_zero_array[this->nprocs], zero_array[this->nprocs];
     for (int i=0; i<this->nprocs; i++)
         local_zero_array[i] = 0;
@@ -87,9 +88,20 @@ field_descriptor::field_descriptor(
         MPI_Comm_create(this->comm, tgroup, &this->io_comm);
         MPI_Group_free(&tgroup0);
         MPI_Group_free(&tgroup);
+        if (this->subsizes[0] > 0)
+        {
+            MPI_Comm_rank(this->io_comm, &this->io_myrank);
+            MPI_Comm_size(this->io_comm, &this->io_nprocs);
+        }
+        else
+        {
+            this->io_myrank = MPI_PROC_NULL;
+            this->io_nprocs = -1;
+        }
     }
     if (this->subsizes[0] > 0)
     {
+        DEBUG_MSG("creating subarray\n");
         MPI_Type_create_subarray(
                 ndims,
                 this->sizes,
@@ -114,27 +126,31 @@ field_descriptor::field_descriptor(
             MPI_SUM,
             this->comm);
     delete[] local_rank;
-    DEBUG_MSG("exiting field_descriptor::field_descriptor\n");
 }
 
 field_descriptor::~field_descriptor()
 {
-    DEBUG_MSG("entered field_descriptor::~field_descriptor\n");
     delete[] this->sizes;
     delete[] this->subsizes;
     delete[] this->starts;
     delete[] this->rank;
-//    if (this->subsizes[0] > 0)
+    DEBUG_MSG(this->io_comm == MPI_COMM_NULL ? "null\n" : "not null\n");
+    DEBUG_WAIT_ALL();
+    DEBUG_MSG("subsizes[0] = %d \n", this->subsizes[0]);
+    DEBUG_WAIT_ALL();
+    if (this->subsizes[0] > 0)
     {
         DEBUG_MSG("deallocating mpi_array_dtype\n");
+        DEBUG_WAIT(this->io_comm);
         MPI_Type_free(&this->mpi_array_dtype);
-        if (this->nprocs != this->io_nprocs)
-        {
-            DEBUG_MSG("freeing io_comm\n");
-            MPI_Comm_free(&this->io_comm);
-        }
     }
-    DEBUG_MSG("exiting field_descriptor::~field_descriptor\n");
+    DEBUG_WAIT_ALL();
+    if (this->nprocs != this->io_nprocs && this->io_myrank != MPI_PROC_NULL)
+    {
+        DEBUG_MSG("freeing io_comm\n");
+        DEBUG_WAIT(this->io_comm);
+        MPI_Comm_free(&this->io_comm);
+    }
 }
 
 int field_descriptor::read(
@@ -186,7 +202,7 @@ int field_descriptor::write(
         sprintf(ffname, "%s", fname);
 
         MPI_File_open(
-                this->comm,
+                this->io_comm,
                 ffname,
                 MPI_MODE_CREATE | MPI_MODE_WRONLY,
                 info,
