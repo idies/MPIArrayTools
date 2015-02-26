@@ -80,12 +80,12 @@ int main(int argc, char *argv[])
         // velocity
         get_RMHD_names(iteration, true, ifile);
         r->read(ifile);
-        sprintf(ifile[0], "RMHD_u_t%.3x", iteration - iter0);
+        sprintf(ifile[0], "RMHD_u_t%.4x", iteration - iter0);
         s->shuffle(r->r3, ifile[0]);
         // magnetic
         get_RMHD_names(iteration, false, ifile);
         r->read(ifile);
-        sprintf(ifile[0], "RMHD_b_t%.3x", iteration - iter0);
+        sprintf(ifile[0], "RMHD_b_t%.4x", iteration - iter0);
         s->shuffle(r->r3, ifile[0]);
     }
 
