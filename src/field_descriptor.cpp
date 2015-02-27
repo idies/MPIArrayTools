@@ -160,7 +160,7 @@ field_descriptor::field_descriptor(
                 tsubsizes,
                 tstarts,
                 MPI_ORDER_C,
-                MPI_REAL4,
+                MPI_FLOAT,
                 &this->mpi_array_dtype);
         MPI_Type_commit(&this->mpi_array_dtype);
     }
@@ -232,15 +232,15 @@ int field_descriptor::read(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_REAL4,
+                MPI_FLOAT,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                "external32", //this needs to be made more general
                 info);
         MPI_File_read_all(
                 f,
                 buffer,
                 read_size,
-                MPI_REAL4,
+                MPI_FLOAT,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -271,7 +271,7 @@ int field_descriptor::write(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_REAL4,
+                MPI_FLOAT,
                 this->mpi_array_dtype,
                 "native", //this needs to be made more general
                 info);
@@ -279,7 +279,7 @@ int field_descriptor::write(
                 f,
                 buffer,
                 read_size,
-                MPI_REAL4,
+                MPI_FLOAT,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }

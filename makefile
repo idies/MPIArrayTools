@@ -23,7 +23,7 @@
 
 MPICXX  = mpicxx
 LINKER  = mpicxx
-DEFINES = -DNDEBUG
+DEFINES = #-DNDEBUG
 CFLAGS  = -Wall \
 		  -O2 \
 		  #-pg \
