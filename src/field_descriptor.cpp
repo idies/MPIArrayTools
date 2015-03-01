@@ -39,9 +39,9 @@ field_descriptor::field_descriptor(
     this->sizes    = new int[ndims];
     this->subsizes = new int[ndims];
     this->starts   = new int[ndims];
-    int tsizes    [ndims];
-    int tsubsizes [ndims];
-    int tstarts   [ndims];
+    int tsizes   [ndims];
+    int tsubsizes[ndims];
+    int tstarts  [ndims];
     ptrdiff_t *nfftw = new ptrdiff_t[ndims];
     ptrdiff_t local_n0, local_0_start;
     for (int i = 0; i < this->ndims; i++)
@@ -210,7 +210,8 @@ field_descriptor::~field_descriptor()
 
 int field_descriptor::read(
         const char *fname,
-        void *buffer)
+        void *buffer,
+        const char *datarep)
 {
     if (this->subsizes[0] > 0)
     {
@@ -234,7 +235,7 @@ int field_descriptor::read(
                 0,
                 MPI_FLOAT,
                 this->mpi_array_dtype,
-                "external32", //this needs to be made more general
+                datarep,
                 info);
         MPI_File_read_all(
                 f,
@@ -249,7 +250,8 @@ int field_descriptor::read(
 
 int field_descriptor::write(
         const char *fname,
-        void *buffer)
+        void *buffer,
+        const char *datarep)
 {
     if (this->subsizes[0] > 0)
     {
@@ -273,7 +275,7 @@ int field_descriptor::write(
                 0,
                 MPI_FLOAT,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                datarep,
                 info);
         MPI_File_write_all(
                 f,

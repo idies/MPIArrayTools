@@ -57,10 +57,12 @@ class field_descriptor
          * */
         int read(
                 const char *fname,
-                void *buffer);
+                void *buffer,
+                const char *datarep = "native");
         int write(
                 const char *fname,
-                void *buffer);
+                void *buffer,
+                const char *datarep = "native");
 
         /* a function that generates the transposed descriptor.
          * don't forget to delete the result once you're done with it.
