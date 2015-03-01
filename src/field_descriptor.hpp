@@ -1,3 +1,24 @@
+/***********************************************************************
+*
+*  Copyright 2015 Johns Hopkins University
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* Contact: turbulence@pha.jhu.edu
+* Website: http://turbulence.pha.jhu.edu/
+*
+************************************************************************/
+
 #include <mpi.h>
 #include <fftw3-mpi.h>
 
@@ -36,10 +57,12 @@ class field_descriptor
          * */
         int read(
                 const char *fname,
-                void *buffer);
+                void *buffer,
+                const char *datarep = "native");
         int write(
                 const char *fname,
-                void *buffer);
+                void *buffer,
+                const char *datarep = "native");
 
         /* a function that generates the transposed descriptor.
          * don't forget to delete the result once you're done with it.

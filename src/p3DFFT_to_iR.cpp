@@ -1,3 +1,24 @@
+/***********************************************************************
+*
+*  Copyright 2015 Johns Hopkins University
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* Contact: turbulence@pha.jhu.edu
+* Website: http://turbulence.pha.jhu.edu/
+*
+************************************************************************/
+
 #include "base.hpp"
 #include "p3DFFT_to_iR.hpp"
 #include <string>
@@ -13,6 +34,15 @@ p3DFFT_to_iR::p3DFFT_to_iR(
     this->howmany = howmany;
     int n[7];
     DEBUG_MSG("entering constructor of p3DFFT_to_iR\n");
+    if ((N0 < n2) ||
+        (N1 < n1) ||
+        (N2 < (n0-1)*2))
+    {
+        std::cerr <<
+            "Output dimensions should be larger than input dimensions.\n"
+            "Aborting.\n" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     // first 3 arguments are dimensions for input array
     // i.e. actual dimensions for the Fourier representation.
@@ -48,7 +78,6 @@ p3DFFT_to_iR::p3DFFT_to_iR(
     if (allocate_fields)
     {
         //allocate fields
-        this->c0  = fftwf_alloc_complex(this->f0c->local_size);
         this->c12 = fftwf_alloc_complex(this->f1c->local_size);
         // 4 instead of 2, because we have 2 fields to write
         this->r3  = fftwf_alloc_real( 2*this->f3c->local_size*this->howmany);
@@ -84,7 +113,6 @@ p3DFFT_to_iR::~p3DFFT_to_iR()
 
     if (this->fields_allocated)
     {
-        fftwf_free(this->c0);
         fftwf_free(this->c12);
         fftwf_free(this->r3);
         fftwf_destroy_plan(this->complex2real);
@@ -98,11 +126,15 @@ int p3DFFT_to_iR::read(
     for (int i = 0; i < this->howmany; i++)
     {
         DEBUG_MSG("p3DFFT_to_iR::read "
-                  "this->f0c->read(ifile0, (void*)this->c0);\n");
-        this->f0c->read(ifile[i], (void*)this->c0);
+                  "this->f0c->read(ifile0, ...);\n");
+        this->f0c->read(
+                ifile[i],
+                (void*)(this->c3 + i*this->f3c->local_size));
         DEBUG_MSG("p3DFFT_to_iR::read "
-                  "this->f0c->transpose(this->c0, this->c12);\n");
-        this->f0c->transpose(this->c0, this->c12);
+                  "this->f0c->transpose(...);\n");
+        this->f0c->transpose(
+                this->c3 + i*this->f3c->local_size,
+                this->c12);
         DEBUG_MSG("p3DFFT_to_iR::read "
                   "this->f1c->transpose(this->c12);\n");
         this->f1c->transpose(this->c12);
