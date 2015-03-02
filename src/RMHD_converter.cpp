@@ -30,17 +30,18 @@ const int iter0 = 138000;
 int get_RMHD_names(
         int iteration,
         bool velocity,
-        char **fname)
+        char **fname,
+        const char *prefix = "./")
 {
     if (velocity)
     {
-        sprintf(fname[0], "K%.6dQNP002", iteration);
-        sprintf(fname[1], "K%.6dQNP003", iteration);
+        sprintf(fname[0], "%sK%.6dQNP002", prefix, iteration);
+        sprintf(fname[1], "%sK%.6dQNP003", prefix, iteration);
     }
     else
     {
-        sprintf(fname[0], "K%.6dQNP005", iteration);
-        sprintf(fname[1], "K%.6dQNP006", iteration);
+        sprintf(fname[0], "%sK%.6dQNP005", prefix, iteration);
+        sprintf(fname[1], "%sK%.6dQNP006", prefix, iteration);
     }
     return EXIT_SUCCESS;
 }
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
     const int n = 1364;
     const int N = 2048;
     int iteration;
-    if (argc < 2)
+    if (argc < 4)
     {
         std::cerr <<
             "not enough parameters.\naborting." <<
@@ -71,27 +72,36 @@ int main(int argc, char *argv[])
 
     // initialize file names
     char *ifile[2];
+    char *src_prefix;
+    char *dst_prefix;
     for (int i=0; i<2; i++)
-        ifile[i] = (char*)malloc(sizeof(char)*100);
+        ifile[i] = (char*)malloc(sizeof(char)*200);
+    src_prefix = (char*)malloc(sizeof(char)*200);
+    dst_prefix = (char*)malloc(sizeof(char)*200);
 
-    for (int i=1; i<argc; i++)
+    sprintf(src_prefix, "%s", argv[1]);
+    sprintf(dst_prefix, "%s", argv[2]);
+
+    for (int i=3; i<argc; i++)
     {
         iteration = atoi(argv[i]);
         // velocity
-        get_RMHD_names(iteration, true, ifile);
+        get_RMHD_names(iteration, true, ifile, src_prefix);
         r->read(ifile);
-        sprintf(ifile[0], "RMHD_u_t%.4x", iteration - iter0);
+        sprintf(ifile[0], "%sRMHD_u_t%.4x", dst_prefix, iteration - iter0);
         s->shuffle(r->r3, ifile[0]);
         // magnetic
-        get_RMHD_names(iteration, false, ifile);
+        get_RMHD_names(iteration, false, ifile, src_prefix);
         r->read(ifile);
-        sprintf(ifile[0], "RMHD_b_t%.4x", iteration - iter0);
+        sprintf(ifile[0], "%sRMHD_b_t%.4x", dst_prefix, iteration - iter0);
         s->shuffle(r->r3, ifile[0]);
     }
 
     //free file names
     for (int i=0; i<2; i++)
         free(ifile[i]);
+    free(src_prefix);
+    free(dst_prefix);
 
     delete s;
     delete r;
