@@ -84,6 +84,11 @@ class field_descriptor
         int interleave(
                 fftwf_complex *input,
                 int dim);
+
+        int switch_endianness(
+                float *a);
+        int switch_endianness(
+                fftwf_complex *a);
 };
 
 

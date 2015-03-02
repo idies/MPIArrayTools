@@ -130,6 +130,8 @@ int p3DFFT_to_iR::read(
         this->f0c->read(
                 ifile[i],
                 (void*)(this->c3 + i*this->f3c->local_size));
+        this->f0c->switch_endianness(
+                (this->c3 + i*this->f3c->local_size));
         DEBUG_MSG("p3DFFT_to_iR::read "
                   "this->f0c->transpose(...);\n");
         this->f0c->transpose(

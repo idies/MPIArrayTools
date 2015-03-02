@@ -438,6 +438,31 @@ int field_descriptor::interleave(
     return EXIT_SUCCESS;
 }
 
+int field_descriptor::switch_endianness(
+        float *a)
+{
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+    }
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::switch_endianness(
+        fftwf_complex *b)
+{
+    float *a = (float*)b;
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+        *a = btle(*a);
+        a++;
+    }
+    return EXIT_SUCCESS;
+}
+
 field_descriptor* field_descriptor::get_transpose()
 {
     int n[this->ndims];
