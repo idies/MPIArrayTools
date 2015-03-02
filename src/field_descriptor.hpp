@@ -1,3 +1,24 @@
+/***********************************************************************
+*
+*  Copyright 2015 Johns Hopkins University
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* Contact: turbulence@pha.jhu.edu
+* Website: http://turbulence.pha.jhu.edu/
+*
+************************************************************************/
+
 #include <mpi.h>
 #include <fftw3-mpi.h>
 
@@ -63,6 +84,11 @@ class field_descriptor
         int interleave(
                 fftwf_complex *input,
                 int dim);
+
+        int switch_endianness(
+                float *a);
+        int switch_endianness(
+                fftwf_complex *a);
 };
 
 
@@ -79,6 +105,18 @@ int fftwf_copy_complex_array(
 int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
+
+inline float btle(const float be)
+     {
+         float le;
+         char *befloat = (char *) & be;
+         char *lefloat = (char *) & le;
+         lefloat[0] = befloat[3];
+         lefloat[1] = befloat[2];
+         lefloat[2] = befloat[1];
+         lefloat[3] = befloat[0];
+         return le;
+     }
 
 #endif//FIELD_DESCRIPTOR
 

@@ -1,3 +1,24 @@
+/***********************************************************************
+*
+*  Copyright 2015 Johns Hopkins University
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* Contact: turbulence@pha.jhu.edu
+* Website: http://turbulence.pha.jhu.edu/
+*
+************************************************************************/
+
 #include "Morton_shuffler.hpp"
 #include <iostream>
 
@@ -8,7 +29,8 @@ Morton_shuffler::Morton_shuffler(
         int nfiles)
 {
     this->d = d;
-    if (nprocs % nfiles != 0)
+    if ((nprocs % nfiles != 0) &&
+        (nfiles % nprocs != 0))
     {
         std::cerr <<
             "Number of output files incompatible with number of processes.\n"
@@ -31,25 +53,32 @@ Morton_shuffler::Morton_shuffler(
     n[1] = N1;
     n[2] = N2;
     n[3] = this->d;
-    this->dinput = new field_descriptor(4, n, MPI_REAL4, MPI_COMM_WORLD);
+    this->dinput = new field_descriptor(4, n, MPI_FLOAT, MPI_COMM_WORLD);
     n[0] = N0/8;
     n[1] = N1/8;
     n[2] = N2/8;
     n[3] = 8*8*8*this->d;
-    this->drcubbie = new field_descriptor(4, n, MPI_REAL4, MPI_COMM_WORLD);
+    this->drcubbie = new field_descriptor(4, n, MPI_FLOAT, MPI_COMM_WORLD);
     n[0] = (N0/8) * (N1/8) * (N2/8);
     n[1] = 8*8*8*this->d;
-    this->dzcubbie = new field_descriptor(2, n, MPI_REAL4, MPI_COMM_WORLD);
+    this->dzcubbie = new field_descriptor(2, n, MPI_FLOAT, MPI_COMM_WORLD);
 
     //set up output file descriptor
     int out_rank, out_nprocs;
     out_nprocs = nprocs/nfiles;
+    if (out_nprocs == 0)
+    {
+        out_nprocs = 1;
+        this->files_per_proc = nfiles / nprocs;
+    }
+    else
+        this->files_per_proc = 1;
     this->out_group = myrank / out_nprocs;
     out_rank = myrank % out_nprocs;
     n[0] = ((N0/8) * (N1/8) * (N2/8)) / nfiles;
     n[1] = 8*8*8*this->d;
     MPI_Comm_split(MPI_COMM_WORLD, this->out_group, out_rank, &this->out_communicator);
-    this->doutput = new field_descriptor(2, n, MPI_REAL4, this->out_communicator);
+    this->doutput = new field_descriptor(2, n, MPI_FLOAT, this->out_communicator);
 }
 
 Morton_shuffler::~Morton_shuffler()
@@ -109,14 +138,14 @@ int Morton_shuffler::shuffle(
                     if (myrank == rid) MPI_Send(
                             rz,
                             cubbie_size,
-                            MPI_REAL4,
+                            MPI_FLOAT,
                             zid,
                             z,
                             MPI_COMM_WORLD);
                     else MPI_Recv(
                             rtmp + zz*cubbie_size,
                             cubbie_size,
-                            MPI_REAL4,
+                            MPI_FLOAT,
                             rid,
                             z,
                             MPI_COMM_WORLD,
@@ -128,11 +157,16 @@ int Morton_shuffler::shuffle(
     fftwf_free(rz);
 
     char temp_char[200];
-    sprintf(temp_char,
-            "%s_z%.7x",
-            base_fname,
-            this->out_group*this->doutput->sizes[0]);
-    this->doutput->write(temp_char, rtmp);
+    for (int fcounter = 0; fcounter < this->files_per_proc; fcounter++)
+    {
+        sprintf(temp_char,
+                "%s_z%.7x",
+                base_fname,
+                (this->files_per_proc*this->out_group + fcounter)*this->doutput->sizes[0]);
+        this->doutput->write(
+                temp_char,
+                rtmp + fcounter*this->doutput->local_size);
+    }
     fftwf_free(rtmp);
     return EXIT_SUCCESS;
 }

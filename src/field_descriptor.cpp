@@ -1,3 +1,24 @@
+/***********************************************************************
+*
+*  Copyright 2015 Johns Hopkins University
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* Contact: turbulence@pha.jhu.edu
+* Website: http://turbulence.pha.jhu.edu/
+*
+************************************************************************/
+
 #include <stdlib.h>
 #include <algorithm>
 #include <iostream>
@@ -18,6 +39,9 @@ field_descriptor::field_descriptor(
     this->sizes    = new int[ndims];
     this->subsizes = new int[ndims];
     this->starts   = new int[ndims];
+    int tsizes   [ndims];
+    int tsubsizes[ndims];
+    int tstarts  [ndims];
     ptrdiff_t *nfftw = new ptrdiff_t[ndims];
     ptrdiff_t local_n0, local_0_start;
     for (int i = 0; i < this->ndims; i++)
@@ -31,8 +55,23 @@ field_descriptor::field_descriptor(
             &local_n0,
             &local_0_start);
     this->sizes[0] = n[0];
-    this->subsizes[0] = local_n0;
-    this->starts[0] = local_0_start;
+    this->subsizes[0] = (int)local_n0;
+    this->starts[0] = (int)local_0_start;
+    DEBUG_MSG_WAIT(
+            this->comm,
+            "first subsizes[0] = %d %d %d\n",
+            this->subsizes[0],
+            tsubsizes[0],
+            (int)local_n0);
+    tsizes[0] = n[0];
+    tsubsizes[0] = (int)local_n0;
+    tstarts[0] = (int)local_0_start;
+    DEBUG_MSG_WAIT(
+            this->comm,
+            "second subsizes[0] = %d %d %d\n",
+            this->subsizes[0],
+            tsubsizes[0],
+            (int)local_n0);
     this->mpi_dtype = element_type;
     this->slice_size = 1;
     this->full_size = this->sizes[0];
@@ -43,15 +82,19 @@ field_descriptor::field_descriptor(
         this->starts[i] = 0;
         this->slice_size *= this->subsizes[i];
         this->full_size *= this->sizes[i];
+        tsizes[i] = this->sizes[i];
+        tsubsizes[i] = this->subsizes[i];
+        tstarts[i] = this->starts[i];
     }
-    DEBUG_MSG_WAIT(
-            this->comm,
-            "inside field_descriptor constructor, about to call "
-            "MPI_Type_create_subarray\n"
-            "%d %d %d\n",
-            this->sizes[0],
-            this->subsizes[0],
-            this->starts[0]);
+    tsizes[ndims-1] *= sizeof(float);
+    tsubsizes[ndims-1] *= sizeof(float);
+    tstarts[ndims-1] *= sizeof(float);
+    if (this->mpi_dtype == MPI_COMPLEX8)
+    {
+        tsizes[ndims-1] *= 2;
+        tsubsizes[ndims-1] *= 2;
+        tstarts[ndims-1] *= 2;
+    }
     int local_zero_array[this->nprocs], zero_array[this->nprocs];
     for (int i=0; i<this->nprocs; i++)
         local_zero_array[i] = 0;
@@ -66,6 +109,11 @@ field_descriptor::field_descriptor(
     int no_of_excluded_ranks = 0;
     for (int i = 0; i<this->nprocs; i++)
         no_of_excluded_ranks += zero_array[i];
+    DEBUG_MSG_WAIT(
+            this->comm,
+            "subsizes[0] = %d %d\n",
+            this->subsizes[0],
+            tsubsizes[0]);
     if (no_of_excluded_ranks == 0)
     {
         this->io_comm = this->comm;
@@ -98,16 +146,24 @@ field_descriptor::field_descriptor(
             this->io_nprocs = -1;
         }
     }
+    DEBUG_MSG_WAIT(
+            this->comm,
+            "inside field_descriptor constructor, about to call "
+            "MPI_Type_create_subarray\n"
+            "%d %d %d\n",
+            this->sizes[0],
+            this->subsizes[0],
+            this->starts[0]);
     if (this->subsizes[0] > 0)
     {
         DEBUG_MSG("creating subarray\n");
         MPI_Type_create_subarray(
                 ndims,
-                this->sizes,
-                this->subsizes,
-                this->starts,
+                tsizes,
+                tsubsizes,
+                tstarts,
                 MPI_ORDER_C,
-                this->mpi_dtype,
+                MPI_UNSIGNED_CHAR,
                 &this->mpi_array_dtype);
         MPI_Type_commit(&this->mpi_array_dtype);
     }
@@ -164,7 +220,10 @@ int field_descriptor::read(
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
+        if (this->mpi_dtype == MPI_COMPLEX8)
+            read_size *= 2;
         sprintf(ffname, "%s", fname);
 
         MPI_File_open(
@@ -176,15 +235,15 @@ int field_descriptor::read(
         MPI_File_set_view(
                 f,
                 0,
-                this->mpi_dtype,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                "native",
                 info);
         MPI_File_read_all(
                 f,
                 buffer,
-                this->local_size,
-                this->mpi_dtype,
+                read_size,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -200,7 +259,10 @@ int field_descriptor::write(
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
+        if (this->mpi_dtype == MPI_COMPLEX8)
+            read_size *= 2;
         sprintf(ffname, "%s", fname);
 
         MPI_File_open(
@@ -212,15 +274,15 @@ int field_descriptor::write(
         MPI_File_set_view(
                 f,
                 0,
-                this->mpi_dtype,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                "native",
                 info);
         MPI_File_write_all(
                 f,
                 buffer,
-                this->local_size,
-                this->mpi_dtype,
+                read_size,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -373,6 +435,31 @@ int field_descriptor::interleave(
             FFTW_ESTIMATE);
     fftwf_execute(tmp);
     fftwf_destroy_plan(tmp);
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::switch_endianness(
+        float *a)
+{
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+    }
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::switch_endianness(
+        fftwf_complex *b)
+{
+    float *a = (float*)b;
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+        *a = btle(*a);
+        a++;
+    }
     return EXIT_SUCCESS;
 }
 

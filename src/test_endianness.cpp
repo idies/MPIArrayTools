@@ -19,8 +19,11 @@
 *
 ************************************************************************/
 
-#include "p3DFFT_to_iR.hpp"
-#include "Morton_shuffler.hpp"
+#include "base.hpp"
+#include "field_descriptor.hpp"
+#include <ctime>
+#include <stdlib.h>
+#include <stdio.h>
 #include <iostream>
 
 int myrank, nprocs;
@@ -31,46 +34,38 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    int n, N, nfiles, nfields;
-    if (argc == 5)
+    int n[2];
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            "nprocs = %d\n", nprocs);
+    n[0] = nprocs;
+    n[1] = 8;
+    field_descriptor *f = new field_descriptor(
+            2, n,
+            MPI_FLOAT,
+            MPI_COMM_WORLD);
+
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            "local_size = %d\n", f->local_size);
+    float *data = fftwf_alloc_real(f->local_size);
+    srand48(myrank + time(NULL));
+
+    for (int i=0; i<n[1]; i++)
     {
-        n = atoi(argv[1]);
-        N = atoi(argv[2]);
-        nfiles = atoi(argv[3]);
-        nfields = atoi(argv[4]);
+        //fread((char*)(data+i), 1, sizeof(float), randomData);
+        data[i] = drand48();
     }
-    else
-    {
-        std::cerr <<
-            "not enough (or too many) parameters.\naborting." <<
-            std::endl;
-        MPI_Finalize();
-        return EXIT_SUCCESS;
-    }
-    p3DFFT_to_iR *r = new p3DFFT_to_iR(
-            (n/2+1), n, n,
-            N, N, N,
-            nfields);
+    DEBUG_MSG_WAIT(
+            MPI_COMM_WORLD,
+            "%g\n", data[0]);
 
-    // initialize file names
-    char* ifile[nfields];
-    for (int i=0; i<nfields; i++)
-    {
-        ifile[i] = (char*)malloc(100*sizeof(char));
-        sprintf(ifile[i], "Kdata%d", i);
-    }
+    f->write("data_native", data, "native");
+    f->write("data_internal", data, "internal");
+    f->write("data_external32", data, "external32");
 
-    //read
-    r->read(ifile);
-    for (int i = 0; i<nfields; i++)
-        free(ifile[i]);
-
-    Morton_shuffler *s = new Morton_shuffler(
-            N, N, N, nfields, nfiles);
-    s->shuffle(r->r3, "Rdata");
-
-    delete s;
-    delete r;
+    fftwf_free(data);
+    delete f;
 
     // clean up
     fftwf_mpi_cleanup();
