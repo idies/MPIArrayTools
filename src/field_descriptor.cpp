@@ -86,6 +86,9 @@ field_descriptor::field_descriptor(
         tsubsizes[i] = this->subsizes[i];
         tstarts[i] = this->starts[i];
     }
+    tsizes[ndims-1] *= sizeof(float);
+    tsubsizes[ndims-1] *= sizeof(float);
+    tstarts[ndims-1] *= sizeof(float);
     if (this->mpi_dtype == MPI_COMPLEX8)
     {
         tsizes[ndims-1] *= 2;
@@ -160,7 +163,7 @@ field_descriptor::field_descriptor(
                 tsubsizes,
                 tstarts,
                 MPI_ORDER_C,
-                MPI_FLOAT,
+                MPI_UNSIGNED_CHAR,
                 &this->mpi_array_dtype);
         MPI_Type_commit(&this->mpi_array_dtype);
     }
@@ -210,15 +213,14 @@ field_descriptor::~field_descriptor()
 
 int field_descriptor::read(
         const char *fname,
-        void *buffer,
-        const char *datarep)
+        void *buffer)
 {
     if (this->subsizes[0] > 0)
     {
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
-        int read_size = this->local_size;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
         if (this->mpi_dtype == MPI_COMPLEX8)
             read_size *= 2;
@@ -233,15 +235,15 @@ int field_descriptor::read(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_FLOAT,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                datarep,
+                "native",
                 info);
         MPI_File_read_all(
                 f,
                 buffer,
                 read_size,
-                MPI_FLOAT,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -250,15 +252,14 @@ int field_descriptor::read(
 
 int field_descriptor::write(
         const char *fname,
-        void *buffer,
-        const char *datarep)
+        void *buffer)
 {
     if (this->subsizes[0] > 0)
     {
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
-        int read_size = this->local_size;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
         if (this->mpi_dtype == MPI_COMPLEX8)
             read_size *= 2;
@@ -273,15 +274,15 @@ int field_descriptor::write(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_FLOAT,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                datarep,
+                "native",
                 info);
         MPI_File_write_all(
                 f,
                 buffer,
                 read_size,
-                MPI_FLOAT,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }

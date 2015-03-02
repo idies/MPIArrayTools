@@ -57,12 +57,10 @@ class field_descriptor
          * */
         int read(
                 const char *fname,
-                void *buffer,
-                const char *datarep = "native");
+                void *buffer);
         int write(
                 const char *fname,
-                void *buffer,
-                const char *datarep = "native");
+                void *buffer);
 
         /* a function that generates the transposed descriptor.
          * don't forget to delete the result once you're done with it.
@@ -102,6 +100,18 @@ int fftwf_copy_complex_array(
 int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
+
+inline float btle(const float be)
+     {
+         float le;
+         char *befloat = (char *) & be;
+         char *lefloat = (char *) & le;
+         lefloat[0] = befloat[3];
+         lefloat[1] = befloat[2];
+         lefloat[2] = befloat[1];
+         lefloat[3] = befloat[0];
+         return le;
+     }
 
 #endif//FIELD_DESCRIPTOR
 
