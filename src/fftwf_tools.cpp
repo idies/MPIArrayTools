@@ -163,7 +163,7 @@ int fftwf_get_descriptors_3D(
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2;
-    *fr = new field_descriptor(3, ntmp, MPI_REAL4, MPI_COMM_WORLD);
+   *fr = new field_descriptor(3, ntmp, MPI_FLOAT, MPI_COMM_WORLD);
     ntmp[0] = n0;
     ntmp[1] = n1;
     ntmp[2] = n2/2+1;

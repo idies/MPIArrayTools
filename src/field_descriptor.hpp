@@ -84,6 +84,11 @@ class field_descriptor
         int interleave(
                 fftwf_complex *input,
                 int dim);
+
+        int switch_endianness(
+                float *a);
+        int switch_endianness(
+                fftwf_complex *a);
 };
 
 
@@ -100,6 +105,18 @@ int fftwf_copy_complex_array(
 int fftwf_clip_zero_padding(
         field_descriptor *f,
         float *a);
+
+inline float btle(const float be)
+     {
+         float le;
+         char *befloat = (char *) & be;
+         char *lefloat = (char *) & le;
+         lefloat[0] = befloat[3];
+         lefloat[1] = befloat[2];
+         lefloat[2] = befloat[1];
+         lefloat[3] = befloat[0];
+         return le;
+     }
 
 #endif//FIELD_DESCRIPTOR
 

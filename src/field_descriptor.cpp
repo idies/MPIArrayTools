@@ -39,9 +39,9 @@ field_descriptor::field_descriptor(
     this->sizes    = new int[ndims];
     this->subsizes = new int[ndims];
     this->starts   = new int[ndims];
-    int tsizes    [ndims];
-    int tsubsizes [ndims];
-    int tstarts   [ndims];
+    int tsizes   [ndims];
+    int tsubsizes[ndims];
+    int tstarts  [ndims];
     ptrdiff_t *nfftw = new ptrdiff_t[ndims];
     ptrdiff_t local_n0, local_0_start;
     for (int i = 0; i < this->ndims; i++)
@@ -86,6 +86,9 @@ field_descriptor::field_descriptor(
         tsubsizes[i] = this->subsizes[i];
         tstarts[i] = this->starts[i];
     }
+    tsizes[ndims-1] *= sizeof(float);
+    tsubsizes[ndims-1] *= sizeof(float);
+    tstarts[ndims-1] *= sizeof(float);
     if (this->mpi_dtype == MPI_COMPLEX8)
     {
         tsizes[ndims-1] *= 2;
@@ -160,7 +163,7 @@ field_descriptor::field_descriptor(
                 tsubsizes,
                 tstarts,
                 MPI_ORDER_C,
-                MPI_REAL4,
+                MPI_UNSIGNED_CHAR,
                 &this->mpi_array_dtype);
         MPI_Type_commit(&this->mpi_array_dtype);
     }
@@ -217,7 +220,7 @@ int field_descriptor::read(
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
-        int read_size = this->local_size;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
         if (this->mpi_dtype == MPI_COMPLEX8)
             read_size *= 2;
@@ -232,15 +235,15 @@ int field_descriptor::read(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_REAL4,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                "native",
                 info);
         MPI_File_read_all(
                 f,
                 buffer,
                 read_size,
-                MPI_REAL4,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -256,7 +259,7 @@ int field_descriptor::write(
         MPI_Info info;
         MPI_Info_create(&info);
         MPI_File f;
-        int read_size = this->local_size;
+        int read_size = this->local_size*sizeof(float);
         char ffname[200];
         if (this->mpi_dtype == MPI_COMPLEX8)
             read_size *= 2;
@@ -271,15 +274,15 @@ int field_descriptor::write(
         MPI_File_set_view(
                 f,
                 0,
-                MPI_REAL4,
+                MPI_UNSIGNED_CHAR,
                 this->mpi_array_dtype,
-                "native", //this needs to be made more general
+                "native",
                 info);
         MPI_File_write_all(
                 f,
                 buffer,
                 read_size,
-                MPI_REAL4,
+                MPI_UNSIGNED_CHAR,
                 MPI_STATUS_IGNORE);
         MPI_File_close(&f);
     }
@@ -432,6 +435,31 @@ int field_descriptor::interleave(
             FFTW_ESTIMATE);
     fftwf_execute(tmp);
     fftwf_destroy_plan(tmp);
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::switch_endianness(
+        float *a)
+{
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+    }
+    return EXIT_SUCCESS;
+}
+
+int field_descriptor::switch_endianness(
+        fftwf_complex *b)
+{
+    float *a = (float*)b;
+    for (int i = 0; i < this->local_size; i++)
+    {
+        *a = btle(*a);
+        a++;
+        *a = btle(*a);
+        a++;
+    }
     return EXIT_SUCCESS;
 }
 
