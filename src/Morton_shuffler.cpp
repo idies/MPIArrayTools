@@ -135,7 +135,7 @@ int Morton_shuffler::shuffle(
                         rtmp + zz*cubbie_size);
                 else
                 {
-                    if (myrank == rid) MPI_Send(
+                    if (myrank == rid) MPI_Ssend(
                             rz,
                             cubbie_size,
                             MPI_FLOAT,
