@@ -19,6 +19,13 @@
 #
 ########################################################################
 
+# environment variables:
+#
+# FFTW_INCLUDE = location of fftw3.h
+# FFTW_LIB = location of libfftw3 etc
+# LOCAL_INCLUDE = location of mpi.h
+# LOCAL_LIB = location of libmpi
+
 
 
 MPICXX  = mpicxx
@@ -26,10 +33,13 @@ LINKER  = mpicxx
 DEFINES = #-DNDEBUG
 CFLAGS  = -Wall \
 		  -O2 \
+		  ${LOCAL_INCLUDE} \
+		  ${FFTW_INCLUDE}
 		  #-pg \
 		  #-finstrument-functions
 
-LIBS = -lfftw3_mpi \
+LIBS = ${FFTW_LIB} \
+	   -lfftw3_mpi \
 	   -lfftw3 \
 	   -lfftw3f_mpi \
 	   -lfftw3f
